@@ -5,7 +5,7 @@
 namespace Espfc {
 
 Espfc::Espfc():
-  _hardware{_model}, _controller{_model}, _telemetry{_model}, _input{_model, _telemetry}, _actuator{_model}, _sensor{_model},
+  _hardware{_model}, _controller{_model}, _navigation{_model}, _telemetry{_model}, _input{_model, _telemetry}, _actuator{_model}, _sensor{_model},
   _mixer{_model}, _blackbox{_model}, _buzzer{_model}, _serial{_model, _telemetry}
   {}
 
@@ -30,6 +30,7 @@ int Espfc::begin()
   _input.begin();       // requires _serial.begin()
   _actuator.begin();    // requires _model.begin()
   _controller.begin();
+  _navigation.begin();  // Initialize navigation system
   _blackbox.begin();    // requires _serial.begin(), _actuator.begin()
   _buzzer.begin();
 
@@ -68,6 +69,7 @@ int FAST_CODE_ATTR Espfc::update(bool externalTrigger)
   if(_model.state.loopTimer.syncTo(_model.state.gyro.timer))
   {
     _controller.update();
+    _navigation.update(); // Update navigation controller
     if(_model.state.mixer.timer.syncTo(_model.state.loopTimer))
     {
       _mixer.update();

@@ -35,6 +35,7 @@ int Actuator::update()
   updateBuzzer();
   updateDynLpf();
   updateRescueConfig();
+  updateNavigation();
   updateLed();
 
   if(_model.config.debug.mode == DEBUG_PIDLOOP)
@@ -157,6 +158,15 @@ bool Actuator::canActivateMode(FlightMode mode)
       return _model.accelActive();
     case MODE_AIRMODE:
       return _model.state.mode.airmodeAllowed;
+    case MODE_GPS_HOLD:
+    case MODE_RETURN_TO_HOME:
+    case MODE_WAYPOINT:
+    case MODE_CRUISE:
+      // Navigation modes require GPS fix and home set
+      return _model.state.gps.present && 
+             _model.state.gps.fix && 
+             _model.state.gps.homeSet &&
+             _model.state.gps.numSats >= _model.config.gps.minSats;
     default:
       return true;
   }
@@ -271,6 +281,38 @@ void Actuator::updateLed()
   else
   {
     _model.state.led.setStatus(Connect::LED_OK);
+  }
+}
+
+void Actuator::updateNavigation()
+{
+  // Handle RTH failsafe activation
+  if(_model.state.failsafe.phase == FC_FAILSAFE_LANDING &&
+     _model.isModeActive(MODE_ARMED) &&
+     !_model.state.navigation.navigationActive)
+  {
+    // Try to activate RTH
+    // Note: actual RTH activation is done by the Navigation controller
+    // Set the mode flag to trigger RTH
+    _model.state.mode.mask |= (1 << MODE_RETURN_TO_HOME);
+  }
+  
+  // If RTH is complete and landed, ensure disarm
+  if(_model.state.navigation.phase == NAV_PHASE_RTH_LANDED)
+  {
+    if(_model.isModeActive(MODE_ARMED))
+    {
+      _model.disarm(DISARM_REASON_GPS_RESCUE);
+    }
+    _model.state.failsafe.phase = FC_FAILSAFE_LANDED;
+  }
+  
+  // Deactivate navigation when disarmed
+  if(!_model.isModeActive(MODE_ARMED) && _model.state.navigation.navigationActive)
+  {
+    _model.state.navigation.navigationActive = false;
+    _model.state.navigation.mode = NAV_MODE_NONE;
+    _model.state.navigation.phase = NAV_PHASE_IDLE;
   }
 }
 

@@ -3,6 +3,7 @@
 #include "Model.h"
 #include "Hardware.h"
 #include "Control/Controller.h"
+#include "Control/Navigation.h"
 #include "Input.h"
 #include "Control/Actuator.h"
 #include "SensorManager.h"
@@ -33,6 +34,7 @@ class Espfc
     Model _model;
     Hardware _hardware;
     Control::Controller _controller;
+    Control::Navigation _navigation;
     TelemetryManager _telemetry;
     Input _input;
     Control::Actuator _actuator;
