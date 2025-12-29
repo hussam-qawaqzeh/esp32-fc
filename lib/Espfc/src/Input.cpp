@@ -244,8 +244,24 @@ void FAST_CODE_ATTR Input::failsafeStage2()
   _model.state.input.rxFailSafe = true;
   if(_model.isModeActive(MODE_ARMED))
   {
-    _model.state.failsafe.phase = FC_FAILSAFE_LANDED;
-    _model.disarm(DISARM_REASON_FAILSAFE);
+    // Check if RTH failsafe is enabled and conditions are met
+    if(_model.config.navigation.enableRthFailsafe && 
+       _model.state.gps.present &&
+       _model.state.gps.fix &&
+       _model.state.gps.homeSet &&
+       _model.state.gps.numSats >= _model.config.navigation.minGpsQuality)
+    {
+      // Activate RTH mode instead of immediate disarm
+      _model.state.failsafe.phase = FC_FAILSAFE_LANDING;
+      // RTH will be activated by the Actuator/Controller
+      // Set MODE_RETURN_TO_HOME flag to trigger RTH
+    }
+    else
+    {
+      // No GPS or home not set - immediate disarm
+      _model.state.failsafe.phase = FC_FAILSAFE_LANDED;
+      _model.disarm(DISARM_REASON_FAILSAFE);
+    }
   }
 }
 

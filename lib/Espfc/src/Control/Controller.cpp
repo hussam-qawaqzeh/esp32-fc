@@ -110,7 +110,26 @@ void Controller::innerLoopRobot()
 
 void FAST_CODE_ATTR Controller::outerLoop()
 {
-  if(_model.isModeActive(MODE_ANGLE))
+  // Check if navigation mode is active
+  bool navActive = _model.state.navigation.navigationActive;
+  
+  if(navActive)
+  {
+    // Use navigation controller outputs
+    _model.state.setpoint.angle = VectorFloat(
+      _model.state.navigation.desiredRoll,
+      _model.state.navigation.desiredPitch,
+      _model.state.navigation.desiredYaw
+    );
+    _model.state.setpoint.rate[AXIS_ROLL]  = _model.state.outerPid[AXIS_ROLL].update(_model.state.setpoint.angle[AXIS_ROLL], _model.state.attitude.euler[AXIS_ROLL]);
+    _model.state.setpoint.rate[AXIS_PITCH] = _model.state.outerPid[AXIS_PITCH].update(_model.state.setpoint.angle[AXIS_PITCH], _model.state.attitude.euler[AXIS_PITCH]);
+    _model.state.setpoint.rate[AXIS_YAW] = calculateSetpointRate(AXIS_YAW, 0.0f); // Hold heading
+    _model.state.setpoint.rate[AXIS_THRUST] = _model.state.navigation.desiredThrottle;
+    // disable fterm in navigation mode
+    _model.state.innerPid[AXIS_ROLL].fScale = 0.f;
+    _model.state.innerPid[AXIS_PITCH].fScale = 0.f;
+  }
+  else if(_model.isModeActive(MODE_ANGLE))
   {
     _model.state.setpoint.angle = VectorFloat(
       _model.state.input.ch[AXIS_ROLL] * Utils::toRad(_model.config.level.angleLimit),
@@ -128,8 +147,12 @@ void FAST_CODE_ATTR Controller::outerLoop()
     _model.state.setpoint.rate[AXIS_ROLL] = calculateSetpointRate(AXIS_ROLL, _model.state.input.ch[AXIS_ROLL]);
     _model.state.setpoint.rate[AXIS_PITCH] = calculateSetpointRate(AXIS_PITCH, _model.state.input.ch[AXIS_PITCH]);
   }
-  _model.state.setpoint.rate[AXIS_YAW] = calculateSetpointRate(AXIS_YAW, _model.state.input.ch[AXIS_YAW]);
-  _model.state.setpoint.rate[AXIS_THRUST] = _model.state.input.ch[AXIS_THRUST];
+  
+  if(!navActive)
+  {
+    _model.state.setpoint.rate[AXIS_YAW] = calculateSetpointRate(AXIS_YAW, _model.state.input.ch[AXIS_YAW]);
+    _model.state.setpoint.rate[AXIS_THRUST] = _model.state.input.ch[AXIS_THRUST];
+  }
 
   if(_model.config.debug.mode == DEBUG_ANGLERATE)
   {
