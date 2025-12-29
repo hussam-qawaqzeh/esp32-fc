@@ -282,6 +282,123 @@ public:
   uint8_t reserved1[5];
 } __attribute__((packed));
 
+// M6-compatible messages (also supported on M7+)
+class UbxNavPosllh28
+{
+public:
+  static constexpr MsgId ID = UBX_NAV_POSLLH;
+  uint32_t iTOW;     // GPS time of week (ms)
+  int32_t lon;       // Longitude (degrees * 1e-7)
+  int32_t lat;       // Latitude (degrees * 1e-7)
+  int32_t height;    // Height above ellipsoid (mm)
+  int32_t hMSL;      // Height above mean sea level (mm)
+  uint32_t hAcc;     // Horizontal accuracy estimate (mm)
+  uint32_t vAcc;     // Vertical accuracy estimate (mm)
+} __attribute__((packed));
+
+class UbxNavVelned36
+{
+public:
+  static constexpr MsgId ID = UBX_NAV_VELNED;
+  uint32_t iTOW;     // GPS time of week (ms)
+  int32_t velN;      // North velocity (cm/s)
+  int32_t velE;      // East velocity (cm/s)
+  int32_t velD;      // Down velocity (cm/s)
+  uint32_t speed;    // 3D speed (cm/s)
+  uint32_t gSpeed;   // Ground speed (2D, cm/s)
+  int32_t heading;   // heading of motion (degrees * 1e-5)
+  uint32_t sAcc;     // Speed accuracy estimate (cm/s)
+  uint32_t cAcc;     // Course/heading accuracy estimate (degrees * 1e-5)
+} __attribute__((packed));
+
+class UbxNavSol52
+{
+public:
+  static constexpr MsgId ID = UBX_NAV_SOL;
+  uint32_t iTOW;     // GPS time of week (ms)
+  int32_t fTOW;      // Fractional part of iTOW (ns)
+  int16_t week;      // GPS week
+  uint8_t gpsFix;    // GPS Fix type: 0-no fix, 1-dead reckon, 2-2D, 3-3D, 4-GPS+dead reckon, 5-time only
+  union {
+    uint8_t value;
+    struct {
+      uint8_t gpsFixOk: 1;    // 1 = valid fix within DOP and accuracy masks
+      uint8_t diffSoln: 1;    // 1 = differential corrections were applied
+      uint8_t wknSet: 1;      // 1 = week number valid
+      uint8_t towSet: 1;      // 1 = time of week valid
+    };
+  } flags;
+  int32_t ecefX;     // ECEF X position (cm)
+  int32_t ecefY;     // ECEF Y position (cm)
+  int32_t ecefZ;     // ECEF Z position (cm)
+  uint32_t pAcc;     // Position accuracy estimate (cm)
+  int32_t ecefVX;    // ECEF X velocity (cm/s)
+  int32_t ecefVY;    // ECEF Y velocity (cm/s)
+  int32_t ecefVZ;    // ECEF Z velocity (cm/s)
+  uint32_t sAcc;     // Speed accuracy estimate (cm/s)
+  uint16_t pDOP;     // Position DOP (0.01)
+  uint8_t reserved1;
+  uint8_t numSV;     // Number of satellites used
+  uint32_t reserved2;
+} __attribute__((packed));
+
+class UbxNavTimeutc20
+{
+public:
+  static constexpr MsgId ID = UBX_NAV_TIMEUTC;
+  uint32_t iTOW;     // GPS time of week (ms)
+  uint32_t tAcc;     // Time accuracy estimate (ns)
+  int32_t nano;      // Fraction of second (ns)
+  uint16_t year;     // Year (UTC)
+  uint8_t month;     // Month (1-12)
+  uint8_t day;       // Day (1-31)
+  uint8_t hour;      // Hour (0-23)
+  uint8_t min;       // Minute (0-59)
+  uint8_t sec;       // Second (0-60)
+  union {
+    uint8_t value;
+    struct {
+      uint8_t validTOW: 1;    // 1 = valid time of week
+      uint8_t validWKN: 1;    // 1 = valid week number
+      uint8_t validUTC: 1;    // 1 = valid UTC
+      uint8_t reserved: 1;
+      uint8_t utcStandard: 4; // UTC standard identifier
+    };
+  } valid;
+} __attribute__((packed));
+
+class UbxNavSvinfo
+{
+public:
+  static constexpr MsgId ID = UBX_NAV_SVINFO;
+  uint32_t iTOW;     // GPS time of week (ms)
+  uint8_t numCh;     // Number of channels
+  uint8_t globalFlags; // Bitmask for hardware generation
+  uint16_t reserved1;
+  struct {
+    uint8_t chn;     // Channel number
+    uint8_t svid;    // Satellite ID
+    union {
+      uint8_t value;
+      struct {
+        uint8_t svUsed: 1;    // 1 = SV is used for navigation
+        uint8_t diffCorr: 1;  // 1 = differential correction data available
+        uint8_t orbitAvail: 1; // 1 = orbit info is available
+        uint8_t orbitEph: 1;  // 1 = orbit info is ephemeris
+        uint8_t unhealthy: 1; // 1 = SV is unhealthy
+        uint8_t orbitAlm: 1;  // 1 = orbit info is almanac
+        uint8_t orbitAop: 1;  // 1 = orbit info is AssistNow offline
+        uint8_t smoothed: 1;  // 1 = carrier smoothed pseudorange used
+      };
+    } flags;
+    uint8_t quality;  // Quality indicator: 0=no signal, 1=searching, 2=acquired, 3=unstable, 4=code lock, 5-7=carrier lock
+    uint8_t cno;      // Carrier/Noise ratio (dBHz)
+    int8_t elev;      // Elevation (degrees)
+    int16_t azim;     // Azimuth (degrees)
+    int32_t prRes;    // Pseudorange residual (cm)
+  } sats[];
+} __attribute__((packed));
+
 class UbxNavPvt92
 {
 public:

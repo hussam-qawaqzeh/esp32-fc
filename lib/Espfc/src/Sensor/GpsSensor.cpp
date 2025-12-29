@@ -16,9 +16,19 @@ static constexpr std::array<uint16_t, 6> NMEA_MSG_OFF{
   Gps::NMEA_MSG_GSV, Gps::NMEA_MSG_RMC, Gps::NMEA_MSG_VTG,
 };
 
-static constexpr std::array<std::tuple<uint16_t, uint8_t>, 2> UBX_MSG_ON{
+// UBX messages for M7+ GPS modules
+static constexpr std::array<std::tuple<uint16_t, uint8_t>, 2> UBX_MSG_M7_ON{
   std::make_tuple(Gps::UBX_NAV_PVT,  1u),
   std::make_tuple(Gps::UBX_NAV_SAT, 10u),
+};
+
+// UBX messages for M6 GPS modules (doesn't support NAV_PVT and NAV_SAT)
+static constexpr std::array<std::tuple<uint16_t, uint8_t>, 5> UBX_MSG_M6_ON{
+  std::make_tuple(Gps::UBX_NAV_SOL,      1u),
+  std::make_tuple(Gps::UBX_NAV_POSLLH,   1u),
+  std::make_tuple(Gps::UBX_NAV_VELNED,   1u),
+  std::make_tuple(Gps::UBX_NAV_SVINFO,  10u),
+  std::make_tuple(Gps::UBX_NAV_TIMEUTC,  5u),
 };
 
 GpsSensor::GpsSensor(Model& model): _model(model) {}
@@ -169,12 +179,27 @@ void GpsSensor::handle()
 
     case ENABLE_UBX:
     {
-      const Gps::UbxCfgMsg3 m{
-        .msgId = std::get<0>(UBX_MSG_ON[_counter]),
-        .rate = std::get<1>(UBX_MSG_ON[_counter]),
-      };
+      // Select message list based on GPS version
+      // M6 doesn't support NAV_PVT and NAV_SAT, use legacy messages instead
+      const bool isM6 = _model.state.gps.support.version == GPS_M6;
+      Gps::UbxCfgMsg3 m{};
+      size_t msgCount = 0;
+      
+      if (isM6)
+      {
+        m.msgId = std::get<0>(UBX_MSG_M6_ON[_counter]);
+        m.rate = std::get<1>(UBX_MSG_M6_ON[_counter]);
+        msgCount = UBX_MSG_M6_ON.size();
+      }
+      else
+      {
+        m.msgId = std::get<0>(UBX_MSG_M7_ON[_counter]);
+        m.rate = std::get<1>(UBX_MSG_M7_ON[_counter]);
+        msgCount = UBX_MSG_M7_ON.size();
+      }
+
       _counter++;
-      if (_counter < UBX_MSG_ON.size())
+      if (_counter < msgCount)
       {
         send(m, _state);
       }
@@ -183,7 +208,7 @@ void GpsSensor::handle()
         send(m, ENABLE_NAV5);
         _counter = 0;
         _timeout = micros() + 10 * TIMEOUT;
-        _model.logger.info().logln(F("GPS UBX"));
+        _model.logger.info().log(F("GPS UBX M")).logln(isM6 ? 6 : 7);
       }
     }
     break;
@@ -281,6 +306,27 @@ void GpsSensor::handle()
         else if (_ubxMsg.isResponse(Gps::UbxNavSat::ID))
         {
           handleNavSat();
+        }
+        // M6-specific message handlers
+        else if (_ubxMsg.isResponse(Gps::UbxNavSol52::ID))
+        {
+          handleNavSol();
+        }
+        else if (_ubxMsg.isResponse(Gps::UbxNavPosllh28::ID))
+        {
+          handleNavPosllh();
+        }
+        else if (_ubxMsg.isResponse(Gps::UbxNavVelned36::ID))
+        {
+          handleNavVelned();
+        }
+        else if (_ubxMsg.isResponse(Gps::UbxNavSvinfo::ID))
+        {
+          handleNavSvinfo();
+        }
+        else if (_ubxMsg.isResponse(Gps::UbxNavTimeutc20::ID))
+        {
+          handleNavTimeutc();
         }
         else
         {
@@ -459,6 +505,97 @@ void GpsSensor::checkSupport(const char *payload) const
   if (std::strstr(payload, "BDS") != nullptr)
   {
     _model.state.gps.support.beidou = true;
+  }
+}
+
+// M6-specific message handlers
+void GpsSensor::handleNavSol() const
+{
+  const auto &m = *_ubxMsg.getAs<Gps::UbxNavSol52>();
+
+  _model.state.gps.fix = m.gpsFix == 3 && m.flags.gpsFixOk;
+  _model.state.gps.fixType = m.gpsFix;
+  _model.state.gps.numSats = m.numSV;
+  _model.state.gps.accuracy.pDop = m.pDOP;
+
+  uint32_t now = micros();
+  _model.state.gps.interval = now - _model.state.gps.lastMsgTs;
+  _model.state.gps.lastMsgTs = now;
+}
+
+void GpsSensor::handleNavPosllh() const
+{
+  const auto &m = *_ubxMsg.getAs<Gps::UbxNavPosllh28>();
+
+  _model.state.gps.location.raw.lat = m.lat;
+  _model.state.gps.location.raw.lon = m.lon;
+  _model.state.gps.location.raw.height = m.hMSL; // mm
+
+  _model.state.gps.accuracy.horizontal = m.hAcc; // mm
+  _model.state.gps.accuracy.vertical = m.vAcc; // mm
+}
+
+void GpsSensor::handleNavVelned() const
+{
+  const auto &m = *_ubxMsg.getAs<Gps::UbxNavVelned36>();
+
+  // M6 provides velocity in cm/s, convert to mm/s for consistency
+  _model.state.gps.velocity.raw.north = m.velN * 10; // cm/s to mm/s
+  _model.state.gps.velocity.raw.east = m.velE * 10;  // cm/s to mm/s
+  _model.state.gps.velocity.raw.down = m.velD * 10;  // cm/s to mm/s
+  _model.state.gps.velocity.raw.groundSpeed = static_cast<int32_t>(m.gSpeed) * 10; // cm/s to mm/s
+  _model.state.gps.velocity.raw.heading = m.heading; // deg * 1e5
+  _model.state.gps.velocity.raw.speed3d = static_cast<int32_t>(m.speed) * 10; // cm/s to mm/s
+
+  _model.state.gps.accuracy.speed = m.sAcc * 10; // cm/s to mm/s
+  _model.state.gps.accuracy.heading = m.cAcc; // deg * 1e5
+}
+
+void GpsSensor::handleNavSvinfo() const
+{
+  const auto &m = *_ubxMsg.getAs<Gps::UbxNavSvinfo>();
+  _model.state.gps.numCh = m.numCh;
+  for (uint8_t i = 0; i < SAT_MAX; i++)
+  {
+    if (i < m.numCh)
+    {
+      _model.state.gps.svinfo[i].id = m.sats[i].svid;
+      _model.state.gps.svinfo[i].gnssId = 0; // M6 doesn't provide gnssId, default to GPS
+      _model.state.gps.svinfo[i].cno = m.sats[i].cno;
+      // Map M6 SVINFO flags to the unified quality structure
+      _model.state.gps.svinfo[i].quality.qualityInd = m.sats[i].quality;
+      _model.state.gps.svinfo[i].quality.svUsed = m.sats[i].flags.svUsed;
+      _model.state.gps.svinfo[i].quality.health = m.sats[i].flags.unhealthy ? 2 : 1;
+      _model.state.gps.svinfo[i].quality.difCorr = m.sats[i].flags.diffCorr;
+      _model.state.gps.svinfo[i].quality.smoothed = m.sats[i].flags.smoothed;
+      _model.state.gps.svinfo[i].quality.ephAvail = m.sats[i].flags.orbitEph;
+      _model.state.gps.svinfo[i].quality.elmAvail = m.sats[i].flags.orbitAlm;
+    }
+    else
+    {
+      _model.state.gps.svinfo[i] = GpsSatelite{};
+    }
+  }
+}
+
+void GpsSensor::handleNavTimeutc() const
+{
+  const auto &m = *_ubxMsg.getAs<Gps::UbxNavTimeutc20>();
+
+  if (m.valid.validUTC)
+  {
+    _model.state.gps.dateTime.year = m.year;
+    _model.state.gps.dateTime.month = m.month;
+    _model.state.gps.dateTime.day = m.day;
+    _model.state.gps.dateTime.hour = m.hour;
+    _model.state.gps.dateTime.minute = m.min;
+    _model.state.gps.dateTime.second = m.sec;
+    int32_t msec = m.nano / 1000000;
+    if (msec < 0)
+    {
+      msec += 1000;
+    }
+    _model.state.gps.dateTime.msec = msec;
   }
 }
 
