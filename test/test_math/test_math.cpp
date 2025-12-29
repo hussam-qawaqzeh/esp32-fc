@@ -227,6 +227,31 @@ void test_vector_int16_access()
   TEST_ASSERT_EQUAL_INT16(3, v.get(2));
 }
 
+void test_vector_set_three_params()
+{
+  // Test with VectorFloat
+  VectorFloat vf;
+  vf.set(1.5f, 2.5f, 3.5f);
+  
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.5f, vf.x);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 2.5f, vf.y);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 3.5f, vf.z);
+  
+  // Test with VectorInt16
+  VectorInt16 vi;
+  vi.set(10, 20, 30);
+  
+  TEST_ASSERT_EQUAL_INT16(10, vi.x);
+  TEST_ASSERT_EQUAL_INT16(20, vi.y);
+  TEST_ASSERT_EQUAL_INT16(30, vi.z);
+  
+  // Test reset to zero (like in KalmanFilter)
+  vf.set(0.0f, 0.0f, 0.0f);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, vf.x);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, vf.y);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 0.0f, vf.z);
+}
+
 void test_vector_int16_math()
 {
   const VectorInt16 v0(0, -1, 2);
@@ -1320,6 +1345,7 @@ int main(int argc, char **argv)
   RUN_TEST(test_math_peak_sort);
 
   RUN_TEST(test_vector_int16_access);
+  RUN_TEST(test_vector_set_three_params);
   RUN_TEST(test_vector_int16_math);
   RUN_TEST(test_vector_float_math3d);
 

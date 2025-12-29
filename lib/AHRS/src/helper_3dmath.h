@@ -239,6 +239,7 @@ public:
   T operator[](size_t i) const { return get(i); }
 
   void set(size_t i, T v) { i == 0 ? x = v : (i == 1 ? y = v : (i == 2 ? z = v : false)); }
+  void set(T nx, T ny, T nz) { x = nx; y = ny; z = nz; }
 
   operator VectorBase<float>() const
   {
