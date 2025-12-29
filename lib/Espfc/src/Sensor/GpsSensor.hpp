@@ -61,13 +61,6 @@ private:
   void handleNavSat() const;
   void handleVersion() const;
   void checkSupport(const char* payload) const;
-  
-  // M6-specific message handlers
-  void handleNavSol() const;
-  void handleNavPosllh() const;
-  void handleNavVelned() const;
-  void handleNavSvinfo() const;
-  void handleNavTimeutc() const;
 
   static constexpr uint32_t TIMEOUT = 300000;
   static constexpr uint32_t DETECT_TIMEOUT = 2200000;
