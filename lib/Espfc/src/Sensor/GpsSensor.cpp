@@ -446,15 +446,7 @@ void GpsSensor::handleVersion() const
   _model.logger.info().log(F("GPS VER")).logln(payload);
   _model.logger.info().log(F("GPS VER")).logln(payload + 30);
 
-  if (std::strcmp(payload + 30, "00040000") == 0)
-  {
-    _model.state.gps.support.version = GPS_M6;
-  }
-  else if (std::strcmp(payload + 30, "00070000") == 0)
-  {
-    _model.state.gps.support.version = GPS_M7;
-  }
-  else if (std::strcmp(payload + 30, "00080000") == 0)
+  if (std::strcmp(payload + 30, "00080000") == 0)
   {
     _model.state.gps.support.version = GPS_M8;
   }
