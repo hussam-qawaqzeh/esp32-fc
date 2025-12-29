@@ -51,14 +51,16 @@ void HybridFusion::updateIMU()
   if(dt <= 0.0f || dt > 1.0f) return; // Sanity check
 
   // Get acceleration in body frame from accelerometer
+  // Note: accelerometer includes gravity, we need to remove it
   VectorFloat accelBody = _model.state.accel.adc;
 
-  // Subtract gravity
-  accelBody.z -= ACCEL_G;
-
-  // Rotate acceleration to earth frame using attitude quaternion
+  // Rotate acceleration to earth frame using attitude quaternion (includes gravity)
   VectorFloat accelEarth = accelBody;
   accelEarth.rotate(_model.state.attitude.quaternion);
+
+  // Remove gravity in earth frame (Z-up convention)
+  // After rotation, gravity is in Z-axis (up), so subtract it
+  accelEarth.z -= ACCEL_G;
 
   // Convert to NED (North-East-Down) frame
   // In the earth frame, Z is up, but NED uses Z down
@@ -157,17 +159,23 @@ VectorFloat HybridFusion::gpsToNED(int32_t lat, int32_t lon, int32_t height) con
   int32_t homeLon = _model.state.gps.location.home.lon;
   int32_t homeHeight = _model.state.gps.location.home.height;
 
+  // GPS coordinate scale factors
+  static constexpr float GPS_INT_TO_DEG = 1e-7f;  // Convert GPS integer degrees to float degrees
+  static constexpr float MM_TO_M = 1e-3f;          // Convert millimeters to meters
+  static constexpr float DEG_TO_RAD = M_PI / 180.0f;
+  static constexpr float METERS_PER_DEG_LAT = 111320.0f; // Approximate meters per degree latitude
+
   // Calculate differences
-  float dLat = (lat - homeLat) * 1e-7f; // degrees
-  float dLon = (lon - homeLon) * 1e-7f; // degrees
-  float dHeight = (height - homeHeight) * 1e-3f; // meters
+  float dLat = (lat - homeLat) * GPS_INT_TO_DEG; // degrees
+  float dLon = (lon - homeLon) * GPS_INT_TO_DEG; // degrees
+  float dHeight = (height - homeHeight) * MM_TO_M; // meters
 
   // Convert to meters (approximate for small distances)
   // 1 degree latitude ≈ 111,320 meters
   // 1 degree longitude ≈ 111,320 * cos(latitude) meters
-  float latRad = homeLat * 1e-7f * M_PI / 180.0f;
-  float north = dLat * 111320.0f;
-  float east = dLon * 111320.0f * cos(latRad);
+  float latRad = homeLat * GPS_INT_TO_DEG * DEG_TO_RAD;
+  float north = dLat * METERS_PER_DEG_LAT;
+  float east = dLon * METERS_PER_DEG_LAT * cos(latRad);
   float down = -dHeight; // NED frame has down positive
 
   return VectorFloat(north, east, down);
@@ -175,11 +183,13 @@ VectorFloat HybridFusion::gpsToNED(int32_t lat, int32_t lon, int32_t height) con
 
 VectorFloat HybridFusion::gpsVelToNED(int32_t north, int32_t east, int32_t down) const
 {
+  static constexpr float MM_PER_S_TO_M_PER_S = 1e-3f;
+  
   // Convert from mm/s to m/s
   return VectorFloat(
-    north * 1e-3f,
-    east * 1e-3f,
-    down * 1e-3f
+    north * MM_PER_S_TO_M_PER_S,
+    east * MM_PER_S_TO_M_PER_S,
+    down * MM_PER_S_TO_M_PER_S
   );
 }
 

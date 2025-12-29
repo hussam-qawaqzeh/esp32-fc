@@ -41,6 +41,61 @@ int Navigation::update()
   // Update navigation state
   updateNavigationState();
 
+  // Check for mode changes and activate/deactivate accordingly
+  if(_model.isModeActive(MODE_RETURN_TO_HOME) && !_model.state.navigation.navigationActive)
+  {
+    activateRTH();
+  }
+  else if(_model.isModeActive(MODE_GPS_HOLD) && !_model.state.navigation.navigationActive)
+  {
+    if(canActivate())
+    {
+      _model.state.navigation.mode = NAV_MODE_GPS_HOLD;
+      _model.state.navigation.phase = NAV_PHASE_ACTIVE;
+      _model.state.navigation.navigationActive = true;
+      _model.state.navigation.phaseStartTime = micros();
+      // Set target to current position
+      _model.state.navigation.targetPosition = _model.state.navigation.position;
+    }
+  }
+  else if(_model.isModeActive(MODE_WAYPOINT) && !_model.state.navigation.navigationActive)
+  {
+    if(canActivate())
+    {
+      _model.state.navigation.mode = NAV_MODE_WAYPOINT;
+      _model.state.navigation.phase = NAV_PHASE_ACTIVE;
+      _model.state.navigation.navigationActive = true;
+      _model.state.navigation.phaseStartTime = micros();
+      // Waypoint target would be set via CLI or telemetry
+      _model.state.navigation.targetPosition = _targetWaypoint;
+    }
+  }
+  else if(_model.isModeActive(MODE_CRUISE) && !_model.state.navigation.navigationActive)
+  {
+    if(canActivate())
+    {
+      _model.state.navigation.mode = NAV_MODE_CRUISE;
+      _model.state.navigation.phase = NAV_PHASE_ACTIVE;
+      _model.state.navigation.navigationActive = true;
+      _model.state.navigation.phaseStartTime = micros();
+    }
+  }
+
+  // Check if navigation should be deactivated (mode switched off)
+  if(_model.state.navigation.navigationActive)
+  {
+    bool navModeActive = _model.isModeActive(MODE_GPS_HOLD) ||
+                         _model.isModeActive(MODE_RETURN_TO_HOME) ||
+                         _model.isModeActive(MODE_WAYPOINT) ||
+                         _model.isModeActive(MODE_CRUISE);
+    
+    if(!navModeActive || !_model.isModeActive(MODE_ARMED))
+    {
+      deactivate();
+      return 1;
+    }
+  }
+
   // Check if navigation is active
   if(!_model.state.navigation.navigationActive)
   {
@@ -243,8 +298,9 @@ void Navigation::rthDescent()
 
 void Navigation::rthLanding()
 {
-  // Gentle landing - reduce throttle gradually
-  _model.state.navigation.desiredThrottle = 0.3f; // Low throttle for gentle touchdown
+  // Gentle landing - reduce throttle gradually using configured value
+  float landingThrottle = _model.config.navigation.landingThrottle * 0.01f; // Convert percent to 0-1 range
+  _model.state.navigation.desiredThrottle = Utils::clamp(landingThrottle, 0.1f, 0.5f);
   _model.state.navigation.desiredRoll = 0.0f;
   _model.state.navigation.desiredPitch = 0.0f;
 
@@ -298,9 +354,9 @@ void Navigation::calculateNavigationOutputs()
   _pidPosDown.Kd = posD;
 
   // Position PIDs output desired velocities
-  float velNorthDesired = _pidPosNorth.update(posError.x, _model.state.navigation.velocity.x);
-  float velEastDesired = _pidPosEast.update(posError.y, _model.state.navigation.velocity.y);
-  float velDownDesired = _pidPosDown.update(posError.z, _model.state.navigation.velocity.z);
+  float velNorthDesired = _pidPosNorth.update(0.0f, -posError.x); // Error as negative measurement
+  float velEastDesired = _pidPosEast.update(0.0f, -posError.y);
+  float velDownDesired = _pidPosDown.update(0.0f, -posError.z);
 
   // Limit desired velocities
   velNorthDesired = Utils::clamp(velNorthDesired, -(float)_model.config.navigation.maxSpeed, (float)_model.config.navigation.maxSpeed);
@@ -328,9 +384,10 @@ void Navigation::calculateNavigationOutputs()
   _pidVelDown.Kd = velD;
 
   // Velocity PIDs output desired accelerations
-  float accelNorth = _pidVelNorth.update(velNorthError, 0.0f);
-  float accelEast = _pidVelEast.update(velEastError, 0.0f);
-  float accelDown = _pidVelDown.update(velDownError, 0.0f);
+  // Using current acceleration as measurement for D-term
+  float accelNorth = _pidVelNorth.update(velNorthDesired, _model.state.navigation.velocity.x);
+  float accelEast = _pidVelEast.update(velEastDesired, _model.state.navigation.velocity.y);
+  float accelDown = _pidVelDown.update(velDownDesired, _model.state.navigation.velocity.z);
 
   // Convert desired accelerations to roll/pitch angles
   // For small angles: pitch ≈ -accelNorth/g, roll ≈ accelEast/g

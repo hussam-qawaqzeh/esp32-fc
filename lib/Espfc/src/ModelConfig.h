@@ -691,6 +691,7 @@ struct NavigationConfig
   uint8_t rthDescentRate = 1;      // RTH descent rate (m/s)
   uint16_t homeTolerance = 2;      // Home position tolerance (meters)
   uint8_t landingDescentRate = 1;  // Landing descent rate (m/s)
+  uint8_t landingThrottle = 30;    // Landing throttle percent (0-100)
   
   // Failsafe RTH
   uint8_t enableRthFailsafe = 1;   // Enable RTH on failsafe
