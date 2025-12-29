@@ -162,7 +162,7 @@ VectorFloat HybridFusion::gpsToNED(int32_t lat, int32_t lon, int32_t height) con
   // GPS coordinate scale factors
   static constexpr float GPS_INT_TO_DEG = 1e-7f;  // Convert GPS integer degrees to float degrees
   static constexpr float MM_TO_M = 1e-3f;          // Convert millimeters to meters
-  static constexpr float DEG_TO_RAD = M_PI / 180.0f;
+  static constexpr float DEG_TO_RAD_FACTOR = M_PI / 180.0f;
   static constexpr float METERS_PER_DEG_LAT = 111320.0f; // Approximate meters per degree latitude
 
   // Calculate differences
@@ -173,7 +173,7 @@ VectorFloat HybridFusion::gpsToNED(int32_t lat, int32_t lon, int32_t height) con
   // Convert to meters (approximate for small distances)
   // 1 degree latitude ≈ 111,320 meters
   // 1 degree longitude ≈ 111,320 * cos(latitude) meters
-  float latRad = homeLat * GPS_INT_TO_DEG * DEG_TO_RAD;
+  float latRad = homeLat * GPS_INT_TO_DEG * DEG_TO_RAD_FACTOR;
   float north = dLat * METERS_PER_DEG_LAT;
   float east = dLon * METERS_PER_DEG_LAT * cos(latRad);
   float down = -dHeight; // NED frame has down positive
