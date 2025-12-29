@@ -450,6 +450,58 @@ struct GpsState
   GpsSatelite svinfo[SAT_MAX];
 };
 
+enum NavigationMode {
+  NAV_MODE_NONE = 0,
+  NAV_MODE_GPS_HOLD,
+  NAV_MODE_RETURN_TO_HOME,
+  NAV_MODE_WAYPOINT,
+  NAV_MODE_CRUISE,
+};
+
+enum NavigationPhase {
+  NAV_PHASE_IDLE = 0,
+  NAV_PHASE_ACTIVE,
+  NAV_PHASE_RTH_CLIMB,
+  NAV_PHASE_RTH_NAVIGATE,
+  NAV_PHASE_RTH_DESCENT,
+  NAV_PHASE_RTH_LANDING,
+  NAV_PHASE_RTH_LANDED,
+};
+
+struct NavigationState
+{
+  NavigationMode mode = NAV_MODE_NONE;
+  NavigationPhase phase = NAV_PHASE_IDLE;
+  
+  // Position and velocity (NED frame, meters)
+  VectorFloat position;
+  VectorFloat velocity;
+  VectorFloat acceleration;
+  
+  // Target position for navigation
+  VectorFloat targetPosition;
+  
+  // Navigation errors
+  float distanceToTarget = 0.0f;
+  float bearingToTarget = 0.0f;
+  float altitudeError = 0.0f;
+  
+  // Navigation outputs
+  float desiredRoll = 0.0f;
+  float desiredPitch = 0.0f;
+  float desiredYaw = 0.0f;
+  float desiredThrottle = 0.0f;
+  
+  // Status flags
+  bool homeValid = false;
+  bool gpsValid = false;
+  bool navigationActive = false;
+  
+  // Timing
+  uint32_t lastUpdate = 0;
+  uint32_t phaseStartTime = 0;
+};
+
 // runtime data
 struct ModelState
 {
@@ -461,6 +513,7 @@ struct ModelState
 
   InputState input;
   FailsafeState failsafe;
+  NavigationState navigation;
 
   AttitudeState attitude;
   RotationMatrixFloat boardAlignment;

@@ -87,6 +87,10 @@ enum FlightMode {
   MODE_FAILSAFE,
   MODE_BLACKBOX,
   MODE_BLACKBOX_ERASE,
+  MODE_GPS_HOLD,
+  MODE_RETURN_TO_HOME,
+  MODE_WAYPOINT,
+  MODE_CRUISE,
   MODE_COUNT,
 };
 
@@ -665,6 +669,34 @@ struct GpsConfig
   uint8_t setHomeOnce = 1;
 };
 
+struct NavigationConfig
+{
+  // PID gains for navigation (scaled by 10)
+  uint8_t posP = 20;      // Position P gain
+  uint8_t posI = 5;       // Position I gain
+  uint8_t posD = 10;      // Position D gain
+  
+  uint8_t velP = 15;      // Velocity P gain
+  uint8_t velI = 3;       // Velocity I gain
+  uint8_t velD = 5;       // Velocity D gain
+  
+  // Navigation limits
+  uint8_t maxAngle = 30;           // Maximum navigation angle (degrees)
+  uint8_t maxSpeed = 10;           // Maximum navigation speed (m/s)
+  uint8_t maxClimbRate = 3;        // Maximum climb rate (m/s)
+  uint8_t maxDescentRate = 2;      // Maximum descent rate (m/s)
+  
+  // RTH parameters
+  uint16_t rthAltitude = 20;       // RTH altitude (meters)
+  uint8_t rthDescentRate = 1;      // RTH descent rate (m/s)
+  uint16_t homeTolerance = 2;      // Home position tolerance (meters)
+  uint8_t landingDescentRate = 1;  // Landing descent rate (m/s)
+  
+  // Failsafe RTH
+  uint8_t enableRthFailsafe = 1;   // Enable RTH on failsafe
+  uint8_t minGpsQuality = 5;       // Minimum GPS quality for RTH (0-10)
+};
+
 struct LedConfig
 {
   uint8_t invert = 0;
@@ -686,6 +718,7 @@ class ModelConfig
     IBatConfig ibat;
     VtxConfig vtx;
     GpsConfig gps;
+    NavigationConfig navigation;
 
     ActuatorCondition conditions[ACTUATOR_CONDITIONS];
     ScalerConfig scaler[SCALER_COUNT];
