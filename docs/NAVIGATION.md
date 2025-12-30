@@ -17,6 +17,12 @@ The hybrid navigation system provides GPS-based autonomous flight capabilities f
 - **Position Control**: Cascaded PID control for position and velocity
 - **Safe Landing**: Automated descent and disarm sequence
 
+## Betaflight Compatibility
+
+- Uses the same MSP/CLI interface as Betaflight, so settings are accessible from Betaflight Configurator (v10.10).
+- Navigation modes are exposed as standard AUX mode flags (GPS Hold and Return-to-Home/GPS Rescue) and can be toggled from the configurator.
+- Return-to-Home is fully supported by the hybrid navigation pipeline: once home is set and GPS is valid, activating the AUX mode will fly back and land automatically.
+
 ### Flight Modes
 
 #### GPS_HOLD Mode
