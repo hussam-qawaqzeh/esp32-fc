@@ -363,11 +363,6 @@ void Navigation::calculateNavigationOutputs()
   velEastDesired = Utils::clamp(velEastDesired, -(float)_model.config.navigation.maxSpeed, (float)_model.config.navigation.maxSpeed);
   velDownDesired = Utils::clamp(velDownDesired, -(float)_model.config.navigation.maxDescentRate, (float)_model.config.navigation.maxClimbRate);
 
-  // Velocity error
-  float velNorthError = velNorthDesired - _model.state.navigation.velocity.x;
-  float velEastError = velEastDesired - _model.state.navigation.velocity.y;
-  float velDownError = velDownDesired - _model.state.navigation.velocity.z;
-
   // Configure velocity PIDs
   float velP = _model.config.navigation.velP * 0.1f;
   float velI = _model.config.navigation.velI * 0.1f;
