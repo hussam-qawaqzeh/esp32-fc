@@ -75,8 +75,6 @@ void HybridFusion::updateIMU()
 
 void HybridFusion::updateGPS()
 {
-  uint32_t now = micros();
-  
   // Only update on new GPS data
   if(_model.state.gps.lastMsgTs == _lastGpsUpdate) return;
   _lastGpsUpdate = _model.state.gps.lastMsgTs;
