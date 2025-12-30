@@ -20,6 +20,7 @@ The mini, DIY, Low cost, ESP32 based, high performance flight controller for hob
 * In flight PID Tuning
 * Buzzer, Led and voltage monitor
 * Failsafe mode
+* Hybrid GPS/IMU navigation (GPS hold, return-to-home, waypoint) configurable via Betaflight Configurator
 
 # Documentation
 
@@ -28,10 +29,11 @@ In this repository you can find firmware code that allows you to build your own 
 > [!IMPORTANT]
 > Before you begin, **read the following documentation carefully first!**.
 
- * [Setup Guide](/docs/setup.md)
- * [Wiring](/docs/wiring.md)
- * [CLI Commands](/docs/cli.md)
- * [WIFI and ESP-NOW Receiver](/docs/wireless.md)
+* [Setup Guide](/docs/setup.md)
+* [Wiring](/docs/wiring.md)
+* [CLI Commands](/docs/cli.md)
+* [WIFI and ESP-NOW Receiver](/docs/wireless.md)
+* [Hybrid Navigation](/docs/NAVIGATION.md)
 
 Join our **[Discord Channel](https://discord.gg/jhyPPM5UEH)** to get help
 
@@ -109,7 +111,7 @@ You can also join our [Discord Channel](https://discord.gg/jhyPPM5UEH)
 ## Todo
 
 * Altitude Hold
-* GPS Navigation
+* Navigation enhancements (missions, obstacle avoidance)
 * MS5611 barometer
 * Balancing robot controller
 
