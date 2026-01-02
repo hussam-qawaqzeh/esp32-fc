@@ -11,7 +11,7 @@ The QMC5883P magnetometer is fully implemented and supported in the ESP32-FC fir
 
 ### 1. Device Class
 - **File**: `lib/Espfc/src/Device/MagQMC5338P.h`
-- **Class**: `MagQMC5338P`
+- **Class**: `MagQMC5338P` (Note: Class uses "5338" naming convention, but implements QMC5883P sensor)
 - **Base Class**: `MagDevice`
 
 ### 2. Configuration
@@ -33,12 +33,12 @@ The QMC5883P is automatically detected during hardware initialization in the fol
 1. I2C bus (if configured)
 2. Gyro slave bus (for MPU9250-based modules)
 
-**Detection Priority** (from `Hardware.cpp`):
-```
-Line 130: if(!detectedMag && detectDevice(ak8963, i2cBus)) detectedMag = &ak8963;
-Line 131: if(!detectedMag && detectDevice(hmc5883l, i2cBus)) detectedMag = &hmc5883l;
-Line 132: if(!detectedMag && detectDevice(qmc5883l, i2cBus)) detectedMag = &qmc5883l;
-Line 133: if(!detectedMag && detectDevice(qmc5883p, i2cBus)) detectedMag = &qmc5883p;
+**Detection Priority** (from `Hardware.cpp` lines 130-133):
+```cpp
+if(!detectedMag && detectDevice(ak8963, i2cBus)) detectedMag = &ak8963;
+if(!detectedMag && detectDevice(hmc5883l, i2cBus)) detectedMag = &hmc5883l;
+if(!detectedMag && detectDevice(qmc5883l, i2cBus)) detectedMag = &qmc5883l;
+if(!detectedMag && detectDevice(qmc5883p, i2cBus)) detectedMag = &qmc5883p;
 ```
 
 ### 5. Initialization Sequence
