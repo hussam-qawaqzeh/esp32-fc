@@ -370,6 +370,7 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
     Param(PSTR("feature_soft_serial"), &c.featureMask, 6),
     Param(PSTR("feature_telemetry"), &c.featureMask, 10),
 
+
     Param(PSTR("debug_mode"), &c.debug.mode, debugModeChoices),
     Param(PSTR("debug_axis"), &c.debug.axis),
 
@@ -432,7 +433,16 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
 
     Param(PSTR("gps_min_sats"), &c.gps.minSats),
     Param(PSTR("gps_set_home_once"), &c.gps.setHomeOnce),
-
+    
+    Param(PSTR("gps_gnss_mode"), &c.gps.gnssMode),
+    Param(PSTR("gps_enable_dual_band"), &c.gps.enableDualBand),
+    Param(PSTR("gps_enable_gps"), &c.gps.enableGPS),
+    Param(PSTR("gps_enable_glonass"), &c.gps.enableGLONASS),
+    Param(PSTR("gps_enable_galileo"), &c.gps.enableGalileo),
+    Param(PSTR("gps_enable_beidou"), &c.gps.enableBeiDou),
+    Param(PSTR("gps_enable_qzss"), &c.gps.enableQZSS),
+    Param(PSTR("gps_enable_sbas"), &c.gps.enableSBAS),
+    
     Param(PSTR("board_align_roll"), &c.boardAlignment[0]),
     Param(PSTR("board_align_pitch"), &c.boardAlignment[1]),
     Param(PSTR("board_align_yaw"), &c.boardAlignment[2]),
@@ -876,7 +886,7 @@ void Cli::execute(CliCmd& cmd, Stream& s)
       PSTR("available commands:"),
       PSTR(" help"), PSTR(" dump"), PSTR(" get param"), PSTR(" set param value ..."), PSTR(" cal [gyro]"),
       PSTR(" defaults"), PSTR(" save"), PSTR(" reboot"), PSTR(" scaler"), PSTR(" mixer"),
-      PSTR(" stats"), PSTR(" status"), PSTR(" devinfo"), PSTR(" version"), PSTR(" logs"), PSTR(" gps"),
+      PSTR(" stats"), PSTR(" status"), PSTR(" devinfo"), PSTR(" version"), PSTR(" logs"), PSTR(" gps [set_home|clear_home]"),
       //PSTR(" load"), PSTR(" eeprom"),
       //PSTR(" fsinfo"), PSTR(" fsformat"), PSTR(" log"),
       nullptr
@@ -1062,7 +1072,20 @@ void Cli::execute(CliCmd& cmd, Stream& s)
   }
   else if(strcmp_P(cmd.args[0], PSTR("gps")) == 0)
   {
-    printGpsStatus(s, true);
+    if(cmd.args[1] && strcmp_P(cmd.args[1], PSTR("set_home")) == 0)
+    {
+      _model.setGpsHome(true);
+      s.println(_model.state.gps.homeSet ? F("Home position set") : F("No GPS fix"));
+    }
+    else if(cmd.args[1] && strcmp_P(cmd.args[1], PSTR("clear_home")) == 0)
+    {
+      _model.state.gps.homeSet = false;
+      s.println(F("Home position cleared"));
+    }
+    else
+    {
+      printGpsStatus(s, true);
+    }
   }
   else if(strcmp_P(cmd.args[0], PSTR("preset")) == 0)
   {
@@ -1561,6 +1584,33 @@ void Cli::printGpsStatus(Stream& s, bool full) const
     const GpsSatelite& sv = _model.state.gps.svinfo[i];
     s.printf("%s %3d %3d  %s %s", getGnssName(sv.gnssId), sv.id, sv.cno, getUsedName(sv.quality.svUsed), getQualityName(sv.quality.qualityInd));
     s.println();
+  }
+  s.println(F("Home:"));
+  if (_model.state.gps.homeSet)
+  {
+    s.print(F("  Lat:  "));
+    s.print(_model.state.gps.location.home.lat);
+    s.print(F(" ("));
+    s.print(_model.state.gps.location.home.lat * 1e-7f, 7);
+    s.println(F(")"));
+
+    s.print(F("  Lon:  "));
+    s.print(_model.state.gps.location.home.lon);
+    s.print(F(" ("));
+    s.print(_model.state.gps.location.home.lon * 1e-7f, 7);
+    s.println(F(")"));
+
+    s.print(F("  Dist: "));
+    s.print(_model.state.gps.distanceToHome);
+    s.println(F(" m"));
+
+    s.print(F("  Bear: "));
+    s.print(_model.state.gps.directionToHome);
+    s.println(F(" deg"));
+  }
+  else
+  {
+    s.println(F("  Not set"));
   }
 #endif
 }
