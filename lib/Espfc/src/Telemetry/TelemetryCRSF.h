@@ -73,15 +73,22 @@ public:
     return 1;
   }
 
-  int sendMsp(Device::SerialDevice& s, Connect::MspResponse r, uint8_t origin) const
+  int sendMsp(Device::SerialDevice& s, Connect::MspResponse resp, uint8_t origin)
   {
-    Rc::CrsfMessage msg;
+    size_t size = resp.serialize(_buff, sizeof(_buff));
+    const uint8_t* beg = _buff + 3;        // skip msp header
+    const uint8_t* end = _buff + size - 1; // skip crc
+    uint8_t version = resp.version == Connect::MSP_V1 ? 1 : 2;
+    size_t iter = 0;
+    Rc::CrsfMessage frame;
+    do
+    {
+      beg = Rc::Crsf::encodeMspData(frame, origin, version, _seq++, !iter, beg, end);
+      send(frame, s);
+      iter++;
+    } while(beg != end && iter < 4);
 
-    Rc::Crsf::encodeMsp(msg, r, origin);
-
-    send(msg, s);
-
-    return 1;
+    return iter;
   }
 
   void send(const Rc::CrsfMessage& msg, Device::SerialDevice& s) const
@@ -93,7 +100,7 @@ public:
   {
     if(angle < -Utils::pi()) angle += Utils::twoPi();
     if(angle >  Utils::pi()) angle -= Utils::twoPi();
-    return lrintf(angle * 1000);
+    return lrintf(angle * 10000);
   }
 
   void attitude(Rc::CrsfMessage& msg) const
@@ -182,6 +189,8 @@ public:
 private:
   Model& _model;
   mutable TelemetryState _current;
+  uint8_t _buff[256] = {0};
+  uint8_t _seq = 0;
 };
 
 }

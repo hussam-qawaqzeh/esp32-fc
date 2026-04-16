@@ -1629,7 +1629,7 @@ void MspProcessor::sendResponse(MspResponse& r, Device::SerialDevice& s)
 {
   debugResponse(r);
   uint8_t buff[256];
-  size_t len = r.serialize(buff, 256);
+  size_t len = r.serialize(buff, sizeof(buff));
   s.write(buff, len);
 }
 
