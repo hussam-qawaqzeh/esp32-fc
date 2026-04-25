@@ -42,6 +42,7 @@ public:
       Param(const char * n, int32_t * a): Param(n, PARAM_INT,    reinterpret_cast<char*>(a), NULL) {}
 
       Param(const char * n, int8_t * a, const char * const * c): Param(n, PARAM_BYTE, reinterpret_cast<char*>(a), c) {}
+      Param(const char * n, uint8_t * a, const char * const * c): Param(n, PARAM_BYTE_U, reinterpret_cast<char*>(a), c) {}
       Param(const char * n, int32_t * a, uint8_t b):  Param(n, PARAM_BITMASK,  reinterpret_cast<char*>(a), NULL, b) {}
 
       Param(const char * n, InputChannelConfig * a):  Param(n, PARAM_INPUT_CHANNEL,  reinterpret_cast<char*>(a), NULL) {}
