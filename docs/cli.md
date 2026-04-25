@@ -419,6 +419,14 @@ set baro_lpf_type BIQUAD
 set baro_lpf_freq 3
 set gps_min_sats 8
 set gps_set_home_once 1
+set gps_auto_set_home 1
+set gps_home_min_distance 5
+set gps_rescue_min_sats 8
+set gps_rescue_altitude 50
+set gps_rescue_min_distance 10
+set gps_rescue_ground_speed 5
+set gps_rescue_sanity_checks 1
+set gps_rescue_max_angle 45
 set board_align_roll 0
 set board_align_pitch 0
 set board_align_yaw 0
