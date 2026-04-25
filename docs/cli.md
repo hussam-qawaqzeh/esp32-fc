@@ -485,6 +485,7 @@ set input_14 14 1000 1500 2000 H 1500
 set input_15 15 1000 1500 2000 H 1500
 set failsafe_delay 4
 set failsafe_kill_switch 0
+set failsafe_procedure DROP
 set vtx_power 0
 set vtx_channel 8
 set vtx_band 1
