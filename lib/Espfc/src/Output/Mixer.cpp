@@ -375,7 +375,7 @@ float inline Mixer::erpmToRpm(float erpm)
 bool Mixer::_stop(void)
 {
   if(!_model.isModeActive(MODE_ARMED)) return true;
-  if(_model.state.failsafe.phase == FC_FAILSAFE_LANDING || _model.state.failsafe.phase == FC_FAILSAFE_GPS_RESCUE) return false;  
+  if(_model.state.failsafe.phase == FC_FAILSAFE_LANDING || _model.state.failsafe.phase == FC_FAILSAFE_GPS_RESCUE) return false;
   if(_model.isFeatureActive(FEATURE_MOTOR_STOP) && _model.isThrottleLow()) return true;
   return false;
 }
