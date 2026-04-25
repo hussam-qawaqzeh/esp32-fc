@@ -2,6 +2,7 @@
 #include "Input.h"
 #include "Utils/Math.hpp"
 #include "Utils/MemoryHelper.h"
+#include <cmath>
 
 namespace Espfc {
 
@@ -188,7 +189,7 @@ bool FAST_CODE_ATTR Input::failsafe(InputStatus status)
   if(_model.isSwitchActive(MODE_FAILSAFE))
   {
     failsafeStage2();
-    return false; // not real failsafe, rx link is still valid
+    return true;
   }
 
   if(status == INPUT_RECEIVED)
@@ -224,6 +225,7 @@ bool FAST_CODE_ATTR Input::failsafe(InputStatus status)
 void FAST_CODE_ATTR Input::failsafeIdle()
 {
   _model.state.failsafe.phase = FC_FAILSAFE_IDLE;
+  _model.state.failsafe.timeout = 0;
   _model.state.input.lossTime = 0;
 }
 
@@ -231,22 +233,70 @@ void FAST_CODE_ATTR Input::failsafeStage1()
 {
   _model.state.failsafe.phase = FC_FAILSAFE_RX_LOSS_DETECTED;
   _model.state.input.rxLoss = true;
+  applyFailsafeChannels();
+
+}
+
+void FAST_CODE_ATTR Input::failsafeStage2()
+{
+  _model.state.input.rxLoss = true;
+  _model.state.input.rxFailSafe = true;
+  
+  if(!_model.isModeActive(MODE_ARMED))
+  {
+    _model.state.failsafe.phase = FC_FAILSAFE_RX_LOSS_DETECTED;
+    return;
+  }
+
+  if(!canUseFailsafeLanding())
+  {
+    finishFailsafeLanding();
+    return;
+  }
+
+  const bool justStarted = _model.state.failsafe.phase != FC_FAILSAFE_LANDING;
+  if(justStarted)
+  {
+    _model.state.failsafe.phase = FC_FAILSAFE_LANDING;
+    _model.state.failsafe.timeout = millis();
+  }
+
+  applyFailsafeLandingChannels();
+
+  const uint32_t elapsed = millis() - _model.state.failsafe.timeout;
+  const bool nearGround = _model.state.altitude.height < FAILSAFE_LANDING_HEIGHT && std::abs(_model.state.altitude.vario) < FAILSAFE_LANDING_VARIO;
+
+  if((nearGround && (justStarted || elapsed >= FAILSAFE_LANDING_MIN_TIME_MS)) || elapsed >= FAILSAFE_LANDING_MAX_TIME_MS)
+  {
+    finishFailsafeLanding();
+  }
+}
+bool Input::canUseFailsafeLanding() const
+{
+  return _model.config.failsafe.procedure == FAILSAFE_PROCEDURE_AUTO_LAND && _model.baroActive();
+}
+
+void Input::applyFailsafeChannels()
+{
   for(size_t i = 0; i < _model.state.input.channelCount; i++)
   {
     setInput((Axis)i, getFailsafeValue(i), true, true);
   }
 }
 
-void FAST_CODE_ATTR Input::failsafeStage2()
+void Input::applyFailsafeLandingChannels()
 {
-  _model.state.failsafe.phase = FC_FAILSAFE_RX_LOSS_DETECTED;
-  _model.state.input.rxLoss = true;
-  _model.state.input.rxFailSafe = true;
-  if(_model.isModeActive(MODE_ARMED))
-  {
-    _model.state.failsafe.phase = FC_FAILSAFE_LANDED;
-    _model.disarm(DISARM_REASON_FAILSAFE);
-  }
+  setInput(AXIS_ROLL, PWM_RANGE_MID, true, true);
+  setInput(AXIS_PITCH, PWM_RANGE_MID, true, true);
+  setInput(AXIS_YAW, PWM_RANGE_MID, true, true);
+  setInput(AXIS_THRUST, FAILSAFE_LANDING_THRUST_US, true, true);
+}
+
+void Input::finishFailsafeLanding()
+{
+  _model.state.failsafe.phase = FC_FAILSAFE_LANDED;
+  _model.state.failsafe.timeout = 0;
+  _model.disarm(DISARM_REASON_FAILSAFE);
 }
 
 void FAST_CODE_ATTR Input::filterInputs(InputStatus status)
