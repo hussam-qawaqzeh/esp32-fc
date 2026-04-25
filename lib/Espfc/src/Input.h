@@ -58,8 +58,11 @@ class Input
 
 
     bool canUseFailsafeLanding() const;
+    bool canUseFailsafeRescue() const;
     void applyFailsafeChannels();
-    void applyFailsafeLandingChannels();
+    void applyFailsafeRescueChannels();
+    void finishFailsafeLanding(DisarmReason reason = DISARM_REASON_FAILSAFE);
+    void resetFailsafeRescueState();
     void finishFailsafeLanding();
 
     Model& _model;
@@ -67,6 +70,10 @@ class Input
     Device::InputDevice * _device;
     Utils::Filter _filter[INPUT_CHANNELS];
     float _step;
+    bool _failsafeRescueActive;
+    bool _failsafeRescuePitchFlipped;
+    float _failsafeRescueBearing;
+    float _failsafeRescuePitchSign;
     Device::InputPPM _ppm;
     Device::InputIBUS _ibus;
     Device::InputSBUS _sbus;
@@ -80,6 +87,10 @@ class Input
     static constexpr float FAILSAFE_LANDING_HEIGHT = 0.35f;
     static constexpr float FAILSAFE_LANDING_VARIO = 0.25f;
     static constexpr uint32_t FAILSAFE_LANDING_MIN_TIME_MS = 1500;
+    static constexpr float FAILSAFE_RESCUE_MIN_SPEED = 0.5f;
+    static constexpr float FAILSAFE_RESCUE_PITCH_GAIN = 4.0f;
+    static constexpr float FAILSAFE_RESCUE_YAW_GAIN = 1.0f / 60.0f;
+    static constexpr float FAILSAFE_RESCUE_MAX_CRAB_ANGLE = 20.0f;
 
 };
 
