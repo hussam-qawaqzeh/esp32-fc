@@ -432,6 +432,14 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
 
     Param(PSTR("gps_min_sats"), &c.gps.minSats),
     Param(PSTR("gps_set_home_once"), &c.gps.setHomeOnce),
+    Param(PSTR("gps_auto_set_home"), &c.gps.autoSetHome),
+    Param(PSTR("gps_home_min_distance"), &c.gps.homeMinDistance),
+    Param(PSTR("gps_rescue_min_sats"), &c.gps.rescueMinSats),
+    Param(PSTR("gps_rescue_altitude"), &c.gps.rescueAltitude),
+    Param(PSTR("gps_rescue_min_distance"), &c.gps.rescueMinDistance),
+    Param(PSTR("gps_rescue_ground_speed"), &c.gps.rescueGroundSpeed),
+    Param(PSTR("gps_rescue_sanity_checks"), &c.gps.rescueSanityChecks),
+    Param(PSTR("gps_rescue_max_angle"), &c.gps.rescueMaxAngle),  
 
     Param(PSTR("board_align_roll"), &c.boardAlignment[0]),
     Param(PSTR("board_align_pitch"), &c.boardAlignment[1]),
