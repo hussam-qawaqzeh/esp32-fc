@@ -56,6 +56,12 @@ class Input
       return (left * (1.f - step) + right * step);
     }
 
+
+    bool canUseFailsafeLanding() const;
+    void applyFailsafeChannels();
+    void applyFailsafeLandingChannels();
+    void finishFailsafeLanding();
+
     Model& _model;
     TelemetryManager& _telemetry;
     Device::InputDevice * _device;
@@ -71,6 +77,12 @@ class Input
 
     static constexpr uint32_t TENTH_TO_US = 100000UL;  // 1_000_000 / 10;
     static constexpr uint32_t FRAME_TIME_DEFAULT_US = 23000; // 23 ms
+    static constexpr uint16_t FAILSAFE_LANDING_THRUST_US = 1350;
+    static constexpr float FAILSAFE_LANDING_HEIGHT = 0.35f;
+    static constexpr float FAILSAFE_LANDING_VARIO = 0.25f;
+    static constexpr uint32_t FAILSAFE_LANDING_MIN_TIME_MS = 1500;
+    static constexpr uint32_t FAILSAFE_LANDING_MAX_TIME_MS = 20000;
+
 };
 
 }
