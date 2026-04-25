@@ -856,8 +856,8 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
 
     case MSP_FAILSAFE_CONFIG:
       r.writeU8(_model.config.failsafe.delay); // failsafe_delay
-      r.writeU8(0); // failsafe_off_delay
-      r.writeU16(1000); //failsafe_throttle
+      r.writeU8(_model.config.failsafe.offDelay); // failsafe_off_delay
+      r.writeU16(_model.config.failsafe.throttle); //failsafe_throttle
       r.writeU8(_model.config.failsafe.killSwitch); // failsafe_kill_switch
       r.writeU16(0); // failsafe_throttle_low_delay
       r.writeU8(_model.config.failsafe.procedure); // failsafe_procedure
@@ -865,8 +865,8 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
 
     case MSP_SET_FAILSAFE_CONFIG:
       _model.config.failsafe.delay = m.readU8(); //failsafe_delay
-      m.readU8(); //failsafe_off_delay
-      m.readU16(); //failsafe_throttle
+      _model.config.failsafe.offDelay = m.readU8(); //failsafe_off_delay
+      _model.config.failsafe.throttle = m.readU16(); //failsafe_throttle
       _model.config.failsafe.killSwitch = m.readU8(); //failsafe_kill_switch
       m.readU16(); //failsafe_throttle_low_delay
       if(m.remain()) _model.config.failsafe.procedure = m.readU8(); //failsafe_procedure
