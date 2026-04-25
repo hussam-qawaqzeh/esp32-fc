@@ -1518,6 +1518,18 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
       r.writeU8(1); // gps_ublox_use_galileo
       break;
     
+    case MSP_SET_GPS_RESCUE:
+      if(m.remain() >= 10)
+      {
+        _model.config.gps.rescueMaxAngle = m.readU16();
+        _model.config.gps.rescueAltitude = m.readU16();
+        _model.config.gps.rescueMinDistance = m.readU16();
+        _model.config.gps.rescueGroundSpeed = std::max((int)m.readU16() / 100, 1);
+        _model.config.gps.rescueSanityChecks = m.readU8();
+        _model.config.gps.rescueMinSats = m.readU8();
+      }
+      break;
+
     case MSP_GPS_RESCUE:
       r.writeU16(_model.config.gps.rescueMaxAngle);
       r.writeU16(_model.config.gps.rescueAltitude);
@@ -1525,7 +1537,7 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
       r.writeU16((uint16_t)std::clamp((int)_model.config.gps.rescueGroundSpeed * 100, 0, (int)std::numeric_limits<uint16_t>::max()));
       r.writeU8(_model.config.gps.rescueSanityChecks);
       r.writeU8(_model.config.gps.rescueMinSats);
-      break;    
+      break;   
 
   case MSP_RAW_GPS:
       r.writeU8(_model.state.gps.fixType > 2); // STATE(GPS_FIX));
