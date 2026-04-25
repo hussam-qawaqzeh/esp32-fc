@@ -534,6 +534,8 @@ struct FailsafeConfig
 {
   uint8_t delay = 4;
   uint8_t killSwitch = 0;
+  uint8_t offDelay = 200;
+  int16_t throttle = 1350;
   uint8_t procedure = FAILSAFE_PROCEDURE_DROP;
 
 };
