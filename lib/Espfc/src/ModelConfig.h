@@ -522,10 +522,20 @@ struct WirelessConfig
   char pass[MAX_LEN + 1];
 };
 
+
+enum FailsafeProcedure {
+  FAILSAFE_PROCEDURE_AUTO_LAND = 0,
+  FAILSAFE_PROCEDURE_DROP = 1,
+  FAILSAFE_PROCEDURE_GPS_RESCUE = 2,
+};
+
+
 struct FailsafeConfig
 {
   uint8_t delay = 4;
   uint8_t killSwitch = 0;
+  uint8_t procedure = FAILSAFE_PROCEDURE_DROP;
+
 };
 
 struct BlackboxConfig
