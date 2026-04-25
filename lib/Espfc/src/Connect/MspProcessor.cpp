@@ -1517,6 +1517,15 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
       r.writeU8(_model.config.gps.setHomeOnce); // gps_set_home_point_once
       r.writeU8(1); // gps_ublox_use_galileo
       break;
+    
+    case MSP_GPS_RESCUE:
+      r.writeU16(_model.config.gps.rescueMaxAngle);
+      r.writeU16(_model.config.gps.rescueAltitude);
+      r.writeU16(_model.config.gps.rescueMinDistance);
+      r.writeU16((uint16_t)std::clamp((int)_model.config.gps.rescueGroundSpeed * 100, 0, (int)std::numeric_limits<uint16_t>::max()));
+      r.writeU8(_model.config.gps.rescueSanityChecks);
+      r.writeU8(_model.config.gps.rescueMinSats);
+      break;    
 
   case MSP_RAW_GPS:
       r.writeU8(_model.state.gps.fixType > 2); // STATE(GPS_FIX));
