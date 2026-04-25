@@ -351,6 +351,7 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
   static const char* throtleLimitTypeChoices[] = { PSTR("NONE"), PSTR("SCALE"), PSTR("CLIP"), NULL };
   static const char* inputFilterChoices[] = { PSTR("INTERPOLATION"), PSTR("FILTER"), NULL };
   static const char* inputItermRelaxChoices[] = { PSTR("OFF"), PSTR("RP"), PSTR("RPY"), PSTR("RP_INC"), PSTR("RPY_INC"), NULL };
+  static const char* failsafeProcedureChoices[] = { PSTR("AUTO_LAND"), PSTR("DROP"), PSTR("GPS_RESCUE"), NULL };
 
   static const char* voltageSourceChoices[] = { PSTR("NONE"), PSTR("ADC"), NULL };
   static const char* currentSourceChoices[] = { PSTR("NONE"), PSTR("ADC"), NULL };
@@ -504,6 +505,8 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
 
     Param(PSTR("failsafe_delay"), &c.failsafe.delay),
     Param(PSTR("failsafe_kill_switch"), &c.failsafe.killSwitch),
+    Param(PSTR("failsafe_procedure"), &c.failsafe.procedure, failsafeProcedureChoices),
+  
 
     Param(PSTR("vtx_power"), &c.vtx.power),
     Param(PSTR("vtx_channel"), &c.vtx.channel),
