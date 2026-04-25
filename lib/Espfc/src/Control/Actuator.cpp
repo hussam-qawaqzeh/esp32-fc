@@ -131,10 +131,10 @@ void Actuator::updateModeMask()
   if(_model.state.failsafe.phase != FC_FAILSAFE_IDLE)
   {
     newMask |= (1 << MODE_FAILSAFE);
-    if(_model.state.failsafe.phase == FC_FAILSAFE_LANDING)
+    if(_model.state.failsafe.phase == FC_FAILSAFE_LANDING || _model.state.failsafe.phase == FC_FAILSAFE_GPS_RESCUE)
     {
       newMask |= (1 << MODE_ARMED);
-      newMask |= (1 << MODE_ALTHOLD);
+      if(_model.baroActive()) newMask |= (1 << MODE_ALTHOLD);
       if(_model.accelActive()) newMask |= (1 << MODE_ANGLE);
     }    
   }
@@ -158,7 +158,7 @@ bool Actuator::canActivateMode(FlightMode mode)
   switch(mode)
   {
     case MODE_ARMED:
-      if(_model.state.failsafe.phase == FC_FAILSAFE_LANDING)
+      if(_model.state.failsafe.phase == FC_FAILSAFE_LANDING || _model.state.failsafe.phase == FC_FAILSAFE_GPS_RESCUE)
       {
         return _model.isModeActive(MODE_ARMED);
       }      
