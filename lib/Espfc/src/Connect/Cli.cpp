@@ -499,6 +499,8 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
     Param(PSTR("input_10"), &c.input.channel[10]),
     Param(PSTR("input_11"), &c.input.channel[11]),
     Param(PSTR("input_12"), &c.input.channel[12]),
+    Param(PSTR("input_11"), &c.input.channel[11]),
+    Param(PSTR("input_12"), &c.input.channel[12]),
     Param(PSTR("input_13"), &c.input.channel[13]),
     Param(PSTR("input_14"), &c.input.channel[14]),
     Param(PSTR("input_15"), &c.input.channel[15]),
