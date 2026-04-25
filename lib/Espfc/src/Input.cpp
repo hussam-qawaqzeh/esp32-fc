@@ -264,9 +264,10 @@ void FAST_CODE_ATTR Input::failsafeStage2()
   applyFailsafeLandingChannels();
 
   const uint32_t elapsed = millis() - _model.state.failsafe.timeout;
+  const uint32_t maxLandingTimeMs = (uint32_t)_model.config.failsafe.offDelay * 100UL;
   const bool nearGround = _model.state.altitude.height < FAILSAFE_LANDING_HEIGHT && std::abs(_model.state.altitude.vario) < FAILSAFE_LANDING_VARIO;
 
-  if((nearGround && (justStarted || elapsed >= FAILSAFE_LANDING_MIN_TIME_MS)) || elapsed >= FAILSAFE_LANDING_MAX_TIME_MS)
+  if((nearGround && elapsed >= FAILSAFE_LANDING_MIN_TIME_MS) || (maxLandingTimeMs > 0 && elapsed >= maxLandingTimeMs))
   {
     finishFailsafeLanding();
   }
@@ -289,7 +290,7 @@ void Input::applyFailsafeLandingChannels()
   setInput(AXIS_ROLL, PWM_RANGE_MID, true, true);
   setInput(AXIS_PITCH, PWM_RANGE_MID, true, true);
   setInput(AXIS_YAW, PWM_RANGE_MID, true, true);
-  setInput(AXIS_THRUST, FAILSAFE_LANDING_THRUST_US, true, true);
+  setInput(AXIS_THRUST, thrustCommandUs, true, true);
 }
 
 void Input::finishFailsafeLanding()
