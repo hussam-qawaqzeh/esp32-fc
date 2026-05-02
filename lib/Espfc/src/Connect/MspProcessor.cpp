@@ -275,13 +275,14 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
       break;
 
     case MSP_BOXNAMES:
-      r.writeString(F("ARM;ANGLE;AIRMODE;BEEPER;FAILSAFE;BLACKBOX;BLACKBOXERASE;"));
+      r.writeString(F("ARM;AIRMODE;ANGLE;ALTHOLD;BEEPER;FAILSAFE;BLACKBOX;BLACKBOXERASE;"));
       break;
 
     case MSP_BOXIDS:
       r.writeU8(MODE_ARMED);
-      r.writeU8(MODE_ANGLE);
       r.writeU8(MODE_AIRMODE);
+      r.writeU8(MODE_ANGLE);
+      r.writeU8(MODE_ALTHOLD);
       r.writeU8(MODE_BUZZER);
       r.writeU8(MODE_FAILSAFE);
       r.writeU8(MODE_BLACKBOX);
@@ -684,8 +685,8 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
       break;
 
     case MSP_ALTITUDE:
-      r.writeU32(lrintf(_model.state.baro.altitude * 100.f));    // alt [cm]
-      r.writeU16(0); // vario
+      r.writeU32(lrintf(_model.state.altitude.height * 100.f));  // alt [cm]
+      r.writeU16(lrintf(_model.state.altitude.vario * 100.f));   // vario [cm/s]
       break;
 
     case MSP_BEEPER_CONFIG:
@@ -1462,7 +1463,12 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
           disableRunawayTakeoff = m.readU8();
         }
         (void)disableRunawayTakeoff;
-        _model.setArmingDisabled(ARMING_DISABLED_MSP, cmd);
+#if defined(ESPFC_DEV_PRESET_UNSAFE_ARMING)
+        (void)cmd;
+#warning "Danger macro used ESPFC_DEV_PRESET_UNSAFE_ARMING"
+#else
+      _model.setArmingDisabled(ARMING_DISABLED_MSP, cmd);
+#endif
         if (_model.isModeActive(MODE_ARMED)) _model.disarm(DISARM_REASON_ARMING_DISABLED);
       }
       break;
@@ -1491,7 +1497,7 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
       break;
 
     case MSP_DEBUG:
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < 8; i++) {
         r.writeU16(_model.state.debug[i]);
       }
       break;
@@ -1531,10 +1537,10 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
       break;
 
   case MSP_COMP_GPS:
-      r.writeU16(0); // GPS_distanceToHome
-      r.writeU16(0); // GPS_directionToHome / 10 // resolution increased in Betaflight 4.4 by factor of 10, this maintains backwards compatibility for DJI OSD
-      r.writeU8(0);  // GPS_update & 1 // direct or msp
-      break;
+    r.writeU16(std::clamp((uint16_t)lrintf(_model.state.gps.distanceToHome), (uint16_t)0, (uint16_t)std::numeric_limits<uint16_t>::max())); // meters
+    r.writeU16((int16_t)lrintf(Utils::toDeg(_model.state.gps.directionToHome))); // deg
+    r.writeU8(_model.state.gps.homeSet ? 1 : 0);  // GPS update
+    break;
 
   case MSP_GPSSVINFO:
       r.writeU8(_model.state.gps.numCh); // GPS_numCh
@@ -1623,7 +1629,7 @@ void MspProcessor::sendResponse(MspResponse& r, Device::SerialDevice& s)
 {
   debugResponse(r);
   uint8_t buff[256];
-  size_t len = r.serialize(buff, 256);
+  size_t len = r.serialize(buff, sizeof(buff));
   s.write(buff, len);
 }
 
