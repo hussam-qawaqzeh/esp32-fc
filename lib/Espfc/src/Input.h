@@ -8,6 +8,8 @@
 #include "Device/InputSBUS.h"
 #include "Device/InputCRSF.h"
 #include "TelemetryManager.h"
+#include "Control/FailsafeLand.h"
+#include "Control/FailsafeRth.h"
 #if defined(ESPFC_ESPNOW)
 #include "Device/InputEspNow.h"
 #endif
@@ -56,24 +58,17 @@ class Input
       return (left * (1.f - step) + right * step);
     }
 
-
-    bool canUseFailsafeLanding() const;
-    bool canUseFailsafeRescue() const;
     void applyFailsafeChannels();
-    void applyFailsafeRescueChannels();
-    void finishFailsafeLanding(DisarmReason reason = DISARM_REASON_FAILSAFE);
-    void resetFailsafeRescueState();
-    void finishFailsafeLanding();
+    void applyFailsafeCommand(const Control::FailsafeCommand& command);
+    void finishFailsafe(DisarmReason reason = DISARM_REASON_FAILSAFE);
 
     Model& _model;
     TelemetryManager& _telemetry;
     Device::InputDevice * _device;
     Utils::Filter _filter[INPUT_CHANNELS];
     float _step;
-    bool _failsafeRescueActive;
-    bool _failsafeRescuePitchFlipped;
-    float _failsafeRescueBearing;
-    float _failsafeRescuePitchSign;
+    Control::FailsafeLand _failsafeLand;
+    Control::FailsafeRth _failsafeRth;
     Device::InputPPM _ppm;
     Device::InputIBUS _ibus;
     Device::InputSBUS _sbus;
@@ -84,14 +79,6 @@ class Input
 
     static constexpr uint32_t TENTH_TO_US = 100000UL;  // 1_000_000 / 10;
     static constexpr uint32_t FRAME_TIME_DEFAULT_US = 23000; // 23 ms
-    static constexpr float FAILSAFE_LANDING_HEIGHT = 0.35f;
-    static constexpr float FAILSAFE_LANDING_VARIO = 0.25f;
-    static constexpr uint32_t FAILSAFE_LANDING_MIN_TIME_MS = 1500;
-    static constexpr float FAILSAFE_RESCUE_MIN_SPEED = 0.5f;
-    static constexpr float FAILSAFE_RESCUE_PITCH_GAIN = 4.0f;
-    static constexpr float FAILSAFE_RESCUE_YAW_GAIN = 1.0f / 60.0f;
-    static constexpr float FAILSAFE_RESCUE_MAX_CRAB_ANGLE = 20.0f;
-
 };
 
 }
