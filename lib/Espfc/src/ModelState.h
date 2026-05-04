@@ -243,7 +243,10 @@ struct BaroState
   float pressure;
   float altitudeRaw;
   float altitude;
+  float altitudeGround;
   float altitudeBias;
+  float altitudePrev;
+  float vario;
   int32_t altitudeBiasSamples;
 };
 
@@ -289,6 +292,8 @@ struct AccelState
   Utils::Filter filter[AXIS_COUNT_RPY];
   Utils::Timer timer;
 
+  VectorFloat world;
+
   float scale;
   VectorFloat bias;
   float biasAlpha;
@@ -302,6 +307,7 @@ struct AttitudeState
   Utils::Filter filter[AXIS_COUNT_RPY];
   VectorFloat euler;
   Quaternion quaternion;
+  float cosTheta;
 };
 
 struct SetpointState
@@ -326,6 +332,12 @@ struct ModeState
   bool isLongClickActive()   const { return button & (1 << 2); }
 };
 
+struct AltitudeState
+{
+  float height;
+  float vario;
+};
+
 struct VtxState
 {
   uint8_t active = false;
@@ -337,15 +349,21 @@ enum GpsDeviceVersion
   GPS_M8,
   GPS_M9,
   GPS_F9,
+  GPS_M10,
 };
 
 struct GpsSupportState
 {
   GpsDeviceVersion version = GPS_UNKNOWN;
+  bool gps = false;
   bool glonass = false;
   bool galileo = false;
   bool beidou = false;
   bool sbas = false;
+  bool qzss = false;
+  bool gpsL5 = false;
+  bool imes = false;
+  uint8_t protVerMajor = 0; // parsed from MON-VER "PROTVER=XX.XX" ext string
 };
 
 template<typename T>
@@ -449,6 +467,9 @@ struct GpsState
   GpsAccuracy accuracy;
   GpsDateTime dateTime;
   GpsSatelite svinfo[SAT_MAX];
+  float distanceToHome = 0;
+  float directionToHome = 0;
+  bool isHomeValid() const { return homeSet && fix && fixType >= 2; }
 };
 
 // runtime data
@@ -465,6 +486,8 @@ struct ModelState
 
   AttitudeState attitude;
   RotationMatrixFloat boardAlignment;
+
+  AltitudeState altitude;
 
   SetpointState setpoint;
   Control::Pid innerPid[AXIS_COUNT_RPYT];

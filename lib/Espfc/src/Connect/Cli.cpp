@@ -276,8 +276,8 @@ void Cli::Param::write(ActuatorCondition& ac, const char ** args) const
   if(args[3]) ac.ch = String(args[3]).toInt();
   if(args[4]) ac.min = String(args[4]).toInt();
   if(args[5]) ac.max = String(args[5]).toInt();
-  if(args[6]) ac.max = String(args[6]).toInt();
-  if(args[7]) ac.max = String(args[7]).toInt();
+  if(args[6]) ac.logicMode = String(args[6]).toInt();
+  if(args[7]) ac.linkId = String(args[7]).toInt();
 }
 
 void Cli::Param::write(MixerEntry& ac, const char ** args) const
@@ -357,6 +357,7 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
   static const char* currentSourceChoices[] = { PSTR("NONE"), PSTR("ADC"), NULL };
   static const char* blackboxDevChoices[] = { PSTR("NONE"), PSTR("FLASH"), PSTR("SD_CARD"), PSTR("SERIAL"), NULL };
   static const char* blackboxModeChoices[] = { PSTR("NORMAL"), PSTR("TEST"), PSTR("ALWAYS"), NULL };
+  static const char* ledTypeChoices[] = { PSTR("SIMPLE"), PSTR("STRIP"), NULL };
 
   size_t i = 0;
   static const Param params[] = {
@@ -369,6 +370,7 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
     Param(PSTR("feature_rx_spi"), &c.featureMask, 25),
     Param(PSTR("feature_soft_serial"), &c.featureMask, 6),
     Param(PSTR("feature_telemetry"), &c.featureMask, 10),
+
 
     Param(PSTR("debug_mode"), &c.debug.mode, debugModeChoices),
     Param(PSTR("debug_axis"), &c.debug.axis),
@@ -432,6 +434,7 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
 
     Param(PSTR("gps_min_sats"), &c.gps.minSats),
     Param(PSTR("gps_set_home_once"), &c.gps.setHomeOnce),
+<<<<<<< Failsafe
     Param(PSTR("gps_auto_set_home"), &c.gps.autoSetHome),
     Param(PSTR("gps_home_min_distance"), &c.gps.homeMinDistance),
     Param(PSTR("gps_rescue_min_sats"), &c.gps.rescueMinSats),
@@ -441,6 +444,18 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
     Param(PSTR("gps_rescue_sanity_checks"), &c.gps.rescueSanityChecks),
     Param(PSTR("gps_rescue_max_angle"), &c.gps.rescueMaxAngle),  
 
+=======
+    
+    Param(PSTR("gps_gnss_mode"), &c.gps.gnssMode),
+    Param(PSTR("gps_enable_dual_band"), &c.gps.enableDualBand),
+    Param(PSTR("gps_enable_gps"), &c.gps.enableGPS),
+    Param(PSTR("gps_enable_glonass"), &c.gps.enableGLONASS),
+    Param(PSTR("gps_enable_galileo"), &c.gps.enableGalileo),
+    Param(PSTR("gps_enable_beidou"), &c.gps.enableBeiDou),
+    Param(PSTR("gps_enable_qzss"), &c.gps.enableQZSS),
+    Param(PSTR("gps_enable_sbas"), &c.gps.enableSBAS),
+    
+>>>>>>> test
     Param(PSTR("board_align_roll"), &c.boardAlignment[0]),
     Param(PSTR("board_align_pitch"), &c.boardAlignment[1]),
     Param(PSTR("board_align_yaw"), &c.boardAlignment[2]),
@@ -572,11 +587,19 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
     Param(PSTR("pid_level_p"), &c.pid[FC_PID_LEVEL].P),
     Param(PSTR("pid_level_i"), &c.pid[FC_PID_LEVEL].I),
     Param(PSTR("pid_level_d"), &c.pid[FC_PID_LEVEL].D),
+    Param(PSTR("pid_level_f"), &c.pid[FC_PID_LEVEL].F),
 
     Param(PSTR("pid_level_angle_limit"), &c.level.angleLimit),
     Param(PSTR("pid_level_rate_limit"), &c.level.rateLimit),
     Param(PSTR("pid_level_lpf_type"), &c.level.ptermFilter.type, filterTypeChoices),
     Param(PSTR("pid_level_lpf_freq"), &c.level.ptermFilter.freq),
+
+    Param(PSTR("pid_althold_vel_p"), &c.pid[FC_PID_VEL].P),
+    Param(PSTR("pid_althold_vel_i"), &c.pid[FC_PID_VEL].I),
+    Param(PSTR("pid_althold_vel_d"), &c.pid[FC_PID_VEL].D),
+    Param(PSTR("pid_althold_vel_f"), &c.pid[FC_PID_VEL].F),
+    Param(PSTR("pid_althold_iterm_center"), &c.altHold.itermCenter),
+    Param(PSTR("pid_althold_iterm_range"), &c.altHold.itermRange),
 
     Param(PSTR("pid_yaw_lpf_type"), &c.yaw.filter.type, filterTypeChoices),
     Param(PSTR("pid_yaw_lpf_freq"), &c.yaw.filter.freq),
@@ -690,6 +713,7 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
 #endif
     Param(PSTR("pin_buzzer_invert"), &c.buzzer.inverted),
     Param(PSTR("pin_led_invert"), &c.led.invert),
+    Param(PSTR("pin_led_type"), &c.led.type, ledTypeChoices),
 
 #ifdef ESPFC_I2C_0
     Param(PSTR("i2c_speed"), &c.i2cSpeed),
@@ -879,7 +903,7 @@ void Cli::execute(CliCmd& cmd, Stream& s)
       PSTR("available commands:"),
       PSTR(" help"), PSTR(" dump"), PSTR(" get param"), PSTR(" set param value ..."), PSTR(" cal [gyro]"),
       PSTR(" defaults"), PSTR(" save"), PSTR(" reboot"), PSTR(" scaler"), PSTR(" mixer"),
-      PSTR(" stats"), PSTR(" status"), PSTR(" devinfo"), PSTR(" version"), PSTR(" logs"), PSTR(" gps"),
+      PSTR(" stats"), PSTR(" status"), PSTR(" devinfo"), PSTR(" version"), PSTR(" logs"), PSTR(" gps [set_home|clear_home]"),
       //PSTR(" load"), PSTR(" eeprom"),
       //PSTR(" fsinfo"), PSTR(" fsformat"), PSTR(" log"),
       nullptr
@@ -1065,7 +1089,20 @@ void Cli::execute(CliCmd& cmd, Stream& s)
   }
   else if(strcmp_P(cmd.args[0], PSTR("gps")) == 0)
   {
-    printGpsStatus(s, true);
+    if(cmd.args[1] && strcmp_P(cmd.args[1], PSTR("set_home")) == 0)
+    {
+      _model.setGpsHome(true);
+      s.println(_model.state.gps.homeSet ? F("Home position set") : F("No GPS fix"));
+    }
+    else if(cmd.args[1] && strcmp_P(cmd.args[1], PSTR("clear_home")) == 0)
+    {
+      _model.state.gps.homeSet = false;
+      s.println(F("Home position cleared"));
+    }
+    else
+    {
+      printGpsStatus(s, true);
+    }
   }
   else if(strcmp_P(cmd.args[0], PSTR("preset")) == 0)
   {
@@ -1393,6 +1430,7 @@ void Cli::execute(CliCmd& cmd, Stream& s)
     else if(strcmp_P(cmd.args[1], PSTR("erase")) == 0)
     {
       flashfsEraseCompletely();
+      s.println("OK");
     }
     else if(strcmp_P(cmd.args[1], PSTR("test")) == 0)
     {
@@ -1400,6 +1438,7 @@ void Cli::execute(CliCmd& cmd, Stream& s)
       flashfsWrite((const uint8_t*)data, strlen(data), true);
       flashfsFlushAsync(true);
       flashfsClose();
+      s.println("OK");
     }
     else if(strcmp_P(cmd.args[1], PSTR("print")) == 0)
     {
@@ -1562,6 +1601,33 @@ void Cli::printGpsStatus(Stream& s, bool full) const
     const GpsSatelite& sv = _model.state.gps.svinfo[i];
     s.printf("%s %3d %3d  %s %s", getGnssName(sv.gnssId), sv.id, sv.cno, getUsedName(sv.quality.svUsed), getQualityName(sv.quality.qualityInd));
     s.println();
+  }
+  s.println(F("Home:"));
+  if (_model.state.gps.homeSet)
+  {
+    s.print(F("  Lat:  "));
+    s.print(_model.state.gps.location.home.lat);
+    s.print(F(" ("));
+    s.print(_model.state.gps.location.home.lat * 1e-7f, 7);
+    s.println(F(")"));
+
+    s.print(F("  Lon:  "));
+    s.print(_model.state.gps.location.home.lon);
+    s.print(F(" ("));
+    s.print(_model.state.gps.location.home.lon * 1e-7f, 7);
+    s.println(F(")"));
+
+    s.print(F("  Dist: "));
+    s.print(Utils::toDeg(_model.state.gps.distanceToHome), 2);
+    s.println(F(" m"));
+
+    s.print(F("  Bear: "));
+    s.print(Utils::toDeg(_model.state.gps.directionToHome), 2);
+    s.println(F(" deg"));
+  }
+  else
+  {
+    s.println(F("  Not set"));
   }
 #endif
 }
