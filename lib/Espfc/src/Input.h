@@ -8,6 +8,8 @@
 #include "Device/InputSBUS.h"
 #include "Device/InputCRSF.h"
 #include "TelemetryManager.h"
+#include "Control/FailsafeLand.h"
+#include "Control/FailsafeRth.h"
 #if defined(ESPFC_ESPNOW)
 #include "Device/InputEspNow.h"
 #endif
@@ -56,11 +58,17 @@ class Input
       return (left * (1.f - step) + right * step);
     }
 
+    void applyFailsafeChannels();
+    void applyFailsafeCommand(const Control::FailsafeCommand& command);
+    void finishFailsafe(DisarmReason reason = DISARM_REASON_FAILSAFE);
+
     Model& _model;
     TelemetryManager& _telemetry;
     Device::InputDevice * _device;
     Utils::Filter _filter[INPUT_CHANNELS];
     float _step;
+    Control::FailsafeLand _failsafeLand;
+    Control::FailsafeRth _failsafeRth;
     Device::InputPPM _ppm;
     Device::InputIBUS _ibus;
     Device::InputSBUS _sbus;

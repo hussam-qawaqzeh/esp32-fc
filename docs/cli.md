@@ -419,6 +419,14 @@ set baro_lpf_type BIQUAD
 set baro_lpf_freq 3
 set gps_min_sats 8
 set gps_set_home_once 1
+set gps_auto_set_home 1
+set gps_home_min_distance 5
+set gps_rescue_min_sats 8
+set gps_rescue_altitude 50
+set gps_rescue_min_distance 10
+set gps_rescue_ground_speed 5
+set gps_rescue_sanity_checks 1
+set gps_rescue_max_angle 45
 set board_align_roll 0
 set board_align_pitch 0
 set board_align_yaw 0
@@ -477,6 +485,9 @@ set input_14 14 1000 1500 2000 H 1500
 set input_15 15 1000 1500 2000 H 1500
 set failsafe_delay 4
 set failsafe_kill_switch 0
+set failsafe_off_delay 200
+set failsafe_throttle 1350
+set failsafe_procedure DROP
 set vtx_power 0
 set vtx_channel 8
 set vtx_band 1

@@ -857,20 +857,20 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
 
     case MSP_FAILSAFE_CONFIG:
       r.writeU8(_model.config.failsafe.delay); // failsafe_delay
-      r.writeU8(0); // failsafe_off_delay
-      r.writeU16(1000); //failsafe_throttle
+      r.writeU8(_model.config.failsafe.offDelay); // failsafe_off_delay
+      r.writeU16(_model.config.failsafe.throttle); //failsafe_throttle
       r.writeU8(_model.config.failsafe.killSwitch); // failsafe_kill_switch
       r.writeU16(0); // failsafe_throttle_low_delay
-      r.writeU8(1); //failsafe_procedure; default drop
+      r.writeU8(_model.config.failsafe.procedure); // failsafe_procedure
       break;
 
     case MSP_SET_FAILSAFE_CONFIG:
       _model.config.failsafe.delay = m.readU8(); //failsafe_delay
-      m.readU8(); //failsafe_off_delay
-      m.readU16(); //failsafe_throttle
+      _model.config.failsafe.offDelay = m.readU8(); //failsafe_off_delay
+      _model.config.failsafe.throttle = m.readU16(); //failsafe_throttle
       _model.config.failsafe.killSwitch = m.readU8(); //failsafe_kill_switch
       m.readU16(); //failsafe_throttle_low_delay
-      m.readU8(); //failsafe_procedure
+      if(m.remain()) _model.config.failsafe.procedure = m.readU8(); //failsafe_procedure
       break;
 
     case MSP_RXFAIL_CONFIG:
@@ -1523,6 +1523,27 @@ void MspProcessor::processCommand(MspMessage& m, MspResponse& r, Device::SerialD
       r.writeU8(_model.config.gps.setHomeOnce); // gps_set_home_point_once
       r.writeU8(1); // gps_ublox_use_galileo
       break;
+    
+    case MSP_SET_GPS_RESCUE:
+      if(m.remain() >= 10)
+      {
+        _model.config.gps.rescueMaxAngle = m.readU16();
+        _model.config.gps.rescueAltitude = m.readU16();
+        _model.config.gps.rescueMinDistance = m.readU16();
+        _model.config.gps.rescueGroundSpeed = std::max((int)m.readU16() / 100, 1);
+        _model.config.gps.rescueSanityChecks = m.readU8();
+        _model.config.gps.rescueMinSats = m.readU8();
+      }
+      break;
+
+    case MSP_GPS_RESCUE:
+      r.writeU16(_model.config.gps.rescueMaxAngle);
+      r.writeU16(_model.config.gps.rescueAltitude);
+      r.writeU16(_model.config.gps.rescueMinDistance);
+      r.writeU16((uint16_t)std::clamp((int)_model.config.gps.rescueGroundSpeed * 100, 0, (int)std::numeric_limits<uint16_t>::max()));
+      r.writeU8(_model.config.gps.rescueSanityChecks);
+      r.writeU8(_model.config.gps.rescueMinSats);
+      break;   
 
   case MSP_RAW_GPS:
       r.writeU8(_model.state.gps.fixType > 2); // STATE(GPS_FIX));

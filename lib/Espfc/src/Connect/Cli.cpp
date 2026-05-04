@@ -351,6 +351,7 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
   static const char* throtleLimitTypeChoices[] = { PSTR("NONE"), PSTR("SCALE"), PSTR("CLIP"), NULL };
   static const char* inputFilterChoices[] = { PSTR("INTERPOLATION"), PSTR("FILTER"), NULL };
   static const char* inputItermRelaxChoices[] = { PSTR("OFF"), PSTR("RP"), PSTR("RPY"), PSTR("RP_INC"), PSTR("RPY_INC"), NULL };
+  static const char* failsafeProcedureChoices[] = { PSTR("AUTO_LAND"), PSTR("DROP"), PSTR("GPS_RESCUE"), NULL };
 
   static const char* voltageSourceChoices[] = { PSTR("NONE"), PSTR("ADC"), NULL };
   static const char* currentSourceChoices[] = { PSTR("NONE"), PSTR("ADC"), NULL };
@@ -433,6 +434,17 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
 
     Param(PSTR("gps_min_sats"), &c.gps.minSats),
     Param(PSTR("gps_set_home_once"), &c.gps.setHomeOnce),
+<<<<<<< Failsafe
+    Param(PSTR("gps_auto_set_home"), &c.gps.autoSetHome),
+    Param(PSTR("gps_home_min_distance"), &c.gps.homeMinDistance),
+    Param(PSTR("gps_rescue_min_sats"), &c.gps.rescueMinSats),
+    Param(PSTR("gps_rescue_altitude"), &c.gps.rescueAltitude),
+    Param(PSTR("gps_rescue_min_distance"), &c.gps.rescueMinDistance),
+    Param(PSTR("gps_rescue_ground_speed"), &c.gps.rescueGroundSpeed),
+    Param(PSTR("gps_rescue_sanity_checks"), &c.gps.rescueSanityChecks),
+    Param(PSTR("gps_rescue_max_angle"), &c.gps.rescueMaxAngle),  
+
+=======
     
     Param(PSTR("gps_gnss_mode"), &c.gps.gnssMode),
     Param(PSTR("gps_enable_dual_band"), &c.gps.enableDualBand),
@@ -443,6 +455,7 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
     Param(PSTR("gps_enable_qzss"), &c.gps.enableQZSS),
     Param(PSTR("gps_enable_sbas"), &c.gps.enableSBAS),
     
+>>>>>>> test
     Param(PSTR("board_align_roll"), &c.boardAlignment[0]),
     Param(PSTR("board_align_pitch"), &c.boardAlignment[1]),
     Param(PSTR("board_align_yaw"), &c.boardAlignment[2]),
@@ -509,12 +522,16 @@ const Cli::Param * Cli::initialize(ModelConfig& c)
     Param(PSTR("input_10"), &c.input.channel[10]),
     Param(PSTR("input_11"), &c.input.channel[11]),
     Param(PSTR("input_12"), &c.input.channel[12]),
+    Param(PSTR("input_11"), &c.input.channel[11]),
+    Param(PSTR("input_12"), &c.input.channel[12]),
     Param(PSTR("input_13"), &c.input.channel[13]),
     Param(PSTR("input_14"), &c.input.channel[14]),
     Param(PSTR("input_15"), &c.input.channel[15]),
 
     Param(PSTR("failsafe_delay"), &c.failsafe.delay),
     Param(PSTR("failsafe_kill_switch"), &c.failsafe.killSwitch),
+    Param(PSTR("failsafe_procedure"), &c.failsafe.procedure, failsafeProcedureChoices),
+  
 
     Param(PSTR("vtx_power"), &c.vtx.power),
     Param(PSTR("vtx_channel"), &c.vtx.channel),

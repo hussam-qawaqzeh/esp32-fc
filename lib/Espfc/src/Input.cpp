@@ -2,10 +2,13 @@
 #include "Input.h"
 #include "Utils/Math.hpp"
 #include "Utils/MemoryHelper.h"
+#include <algorithm>
+#include <cmath>
 
 namespace Espfc {
 
-Input::Input(Model& model, TelemetryManager& telemetry): _model(model), _telemetry(telemetry) {}
+Input::Input(Model& model, TelemetryManager& telemetry):
+  _model(model), _telemetry(telemetry), _device(nullptr), _step(0.0f), _failsafeLand(model), _failsafeRth(model) {}
 
 int Input::begin()
 {
@@ -31,6 +34,8 @@ int Input::begin()
   }
   _model.state.input.interpolationStep = _model.state.loopTimer.intervalf / _model.state.input.interpolationDelta;
   _step = 0.0f;
+  _failsafeLand.reset();
+  _failsafeRth.reset();
   for(size_t c = 0; c < INPUT_CHANNELS; ++c)
   {
     if(_device) _filter[c].begin(FilterConfig(_device->needAverage() ? FILTER_FIR2 : FILTER_NONE, 1), _model.state.loopTimer.rate);
@@ -188,7 +193,7 @@ bool FAST_CODE_ATTR Input::failsafe(InputStatus status)
   if(_model.isSwitchActive(MODE_FAILSAFE))
   {
     failsafeStage2();
-    return false; // not real failsafe, rx link is still valid
+    return true;
   }
 
   if(status == INPUT_RECEIVED)
@@ -224,29 +229,107 @@ bool FAST_CODE_ATTR Input::failsafe(InputStatus status)
 void FAST_CODE_ATTR Input::failsafeIdle()
 {
   _model.state.failsafe.phase = FC_FAILSAFE_IDLE;
+  _model.state.failsafe.timeout = 0;
   _model.state.input.lossTime = 0;
+  _failsafeLand.reset();
+  _failsafeRth.reset();
 }
 
 void FAST_CODE_ATTR Input::failsafeStage1()
 {
   _model.state.failsafe.phase = FC_FAILSAFE_RX_LOSS_DETECTED;
   _model.state.input.rxLoss = true;
+  applyFailsafeChannels();
+}
+
+void FAST_CODE_ATTR Input::failsafeStage2()
+{
+  _model.state.input.rxLoss = true;
+  _model.state.input.rxFailSafe = true;
+
+  const auto updateLanding = [&](DisarmReason reason)
+  {
+    if(_model.state.failsafe.phase != FC_FAILSAFE_LANDING)
+    {
+      _failsafeRth.reset();
+    }
+
+    Control::FailsafeCommand command;
+    if(_failsafeLand.update(command))
+    {
+      finishFailsafe(reason);
+      return;
+    }
+
+    applyFailsafeCommand(command);
+  };
+
+  if(!_model.isModeActive(MODE_ARMED))
+  {
+    _model.state.failsafe.phase = FC_FAILSAFE_RX_LOSS_DETECTED;
+    _failsafeLand.reset();
+    _failsafeRth.reset();
+    return;
+  }
+
+  if(_model.state.failsafe.phase == FC_FAILSAFE_LANDING)
+  {
+    updateLanding(_model.config.failsafe.procedure == FAILSAFE_PROCEDURE_GPS_RESCUE ? DISARM_REASON_GPS_RESCUE : DISARM_REASON_FAILSAFE);
+    return;
+  }
+
+  if(_model.config.failsafe.procedure == FAILSAFE_PROCEDURE_GPS_RESCUE && _failsafeRth.canUse())
+  {
+    Control::FailsafeCommand command;
+    const Control::FailsafeRthAction action = _failsafeRth.update(command);
+    if(action == Control::FailsafeRthAction::Continue)
+    {
+      applyFailsafeCommand(command);
+      return;
+    }
+
+    if(action == Control::FailsafeRthAction::Land && _failsafeLand.canUse())
+    {
+      updateLanding(DISARM_REASON_GPS_RESCUE);
+      return;
+    }
+
+    finishFailsafe(DISARM_REASON_GPS_RESCUE);
+    return;
+  }
+
+  if(_failsafeLand.canUse())
+  {
+    updateLanding(DISARM_REASON_FAILSAFE);
+    return;
+  }
+
+  finishFailsafe();
+}
+
+void Input::applyFailsafeChannels()
+{
   for(size_t i = 0; i < _model.state.input.channelCount; i++)
   {
     setInput((Axis)i, getFailsafeValue(i), true, true);
   }
 }
 
-void FAST_CODE_ATTR Input::failsafeStage2()
+void Input::applyFailsafeCommand(const Control::FailsafeCommand& command)
 {
-  _model.state.failsafe.phase = FC_FAILSAFE_RX_LOSS_DETECTED;
-  _model.state.input.rxLoss = true;
-  _model.state.input.rxFailSafe = true;
-  if(_model.isModeActive(MODE_ARMED))
-  {
-    _model.state.failsafe.phase = FC_FAILSAFE_LANDED;
-    _model.disarm(DISARM_REASON_FAILSAFE);
-  }
+  setInput(AXIS_ROLL, command.roll, true, true);
+  setInput(AXIS_PITCH, command.pitch, true, true);
+  setInput(AXIS_YAW, command.yaw, true, true);
+  setInput(AXIS_THRUST, command.thrust, true, true);
+}
+
+void Input::finishFailsafe(DisarmReason reason)
+{
+  _model.state.failsafe.phase = FC_FAILSAFE_LANDED;
+  _model.state.failsafe.timeout = 0;
+  _failsafeLand.reset();
+  _failsafeRth.reset();
+  _model.disarm(reason);
 }
 
 void FAST_CODE_ATTR Input::filterInputs(InputStatus status)
